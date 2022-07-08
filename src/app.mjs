@@ -8,6 +8,7 @@ import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import { fileURLToPath } from 'url'
 import path, { dirname } from 'path'
+import indexRouter from './routes/index.router.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -18,7 +19,6 @@ app.set('trust proxy', true)
 // view engine setup
 app.set('views', path.join(__dirname, '/views'))
 app.set('view engine', 'ejs')
-
 
 app.use(morgan('dev'))
 app.use(express.json({ limit: '10kb' }))
@@ -45,5 +45,7 @@ app.use(mongoSanitize())
 app.use(xss())
 // Prevent parameter pollution
 app.use(hpp())
+
+app.use(indexRouter)
 
 export default app
