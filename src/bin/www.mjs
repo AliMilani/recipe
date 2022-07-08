@@ -9,12 +9,13 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import app from "../app.mjs";
-// import validateEnv from '../utils/validateEnv.mjs'
 import debug from "debug";
 import http from "http";
+import validateEnv from '../utils/validateEnv.mjs'
 
 debug("node-youme:server");
-// validateEnv();
+validateEnv();
+
 /**
  *  database setup
  */
