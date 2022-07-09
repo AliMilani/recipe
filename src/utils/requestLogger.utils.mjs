@@ -1,5 +1,6 @@
 import { createLogger, format, transports } from 'winston'
 import 'winston-daily-rotate-file'
+import 'express-async-errors'
 
 const { combine, timestamp, printf } = format
 

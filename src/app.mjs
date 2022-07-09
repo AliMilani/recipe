@@ -1,3 +1,4 @@
+import httpContext from 'express-http-context'
 import express from 'express'
 import xss from 'xss-clean'
 import helmet from 'helmet'
@@ -25,6 +26,10 @@ app.use(express.json({ limit: '10kb' }))
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname, 'public')))
+
+// Use any third party middleware that does not need access to the context here, e.g.
+app.use(httpContext.middleware)
+// all code from here on has access to the same context for each request
 
 // Set security HTTP headers
 app.use(helmet())

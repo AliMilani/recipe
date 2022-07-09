@@ -12,9 +12,12 @@ import app from "../app.mjs";
 import debug from "debug";
 import http from "http";
 import validateEnv from '../utils/validateEnv.mjs'
+import errorLoggerUtls from '../utils/errorLogger.utls.mjs'
 
 debug("node-youme:server");
 validateEnv();
+const mongoURL = process.env.MONGODB_URL
+errorLoggerUtls(mongoURL)
 
 /**
  *  database setup
@@ -22,7 +25,7 @@ validateEnv();
 import mongoose from "mongoose";
 
 mongoose
-    .connect(process.env.MONGODB_URL)
+    .connect(mongoURL)
     .then((conn) => {
         console.log(`MongoDB Connected: ${conn.connection.host}`);
     })
