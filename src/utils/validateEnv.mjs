@@ -7,6 +7,7 @@ function validateEnv() {
         }),
         MONGODB_URL: str(),
         PORT: port({ default: 3000 }),
+        JWT_SECRET: str(),
     })
 }
 
