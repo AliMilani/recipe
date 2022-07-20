@@ -12,14 +12,14 @@ class Auth extends Controller {
     isAuth = async (req, res, next) => {
         let token = req.headers['x-auth-token']
         if (!token) {
-            setCodeResponse(Code.AUTH_IS_NOT_SET)
+            setCodeResponse(Code.ACCESS_TOKEN_NOT_SET)
             return this.self.response(res, {}, {})
         }
         let user
         try {
             user = await verifyToken(token)
         } catch (err) {
-            setCodeResponse(Code.TOKEN_INVALID)
+            setCodeResponse(Code.ACCESS_TOKEN_INVALID)
             return this.self.response(res, {}, {})
         }
         if (!user) {
@@ -37,7 +37,7 @@ class Auth extends Controller {
             return this.self.response(res, {}, {})
         }
         if (user.type !== UserType.USER) {
-            setCodeResponse(Code.ACCESS_DENIED)
+            setCodeResponse({ ...Code.USER_NOT_FOUND, devMsg: 'User type is not a user' })
             return this.self.response(res, {}, {})
         }
         next()
@@ -46,12 +46,12 @@ class Auth extends Controller {
     isAdmin = async (req, res, next) => {
         let user = req.user
         if (!user) {
-            setCodeResponse(Code.USER_NOT_FOUND)
-            return this.self.response(res, {}, {})
+            setCodeResponse(Code.UNAUTHORIZED)
+            return this.self.response(res, {}, { user })
         }
-        if (user.type !== UserType.ADMIN) {
+        if (user.role !== UserType.ADMIN) {
             setCodeResponse(Code.USER_NOT_ADMIN)
-            return this.self.response(res, {}, {})
+            return this.self.response(res, {}, { user })
         }
         next()
     }
