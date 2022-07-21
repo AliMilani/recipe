@@ -36,7 +36,7 @@ class Auth extends Controller {
             setCodeResponse(Code.USER_NOT_FOUND)
             return this.self.response(res, {}, {})
         }
-        if (user.type !== UserType.USER) {
+        if (user.role !== UserType.USER) {
             setCodeResponse({ ...Code.USER_NOT_FOUND, devMsg: 'User type is not a user' })
             return this.self.response(res, {}, {})
         }

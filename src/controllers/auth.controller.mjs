@@ -1,11 +1,12 @@
+import _ from 'lodash'
+import httpContext from 'express-http-context'
 import Controller from './controller.mjs'
+import userService from '../services/user.service.mjs'
 import { Code, UserType } from '../utils/consts.utils.mjs'
 import { setCodeResponse } from '../utils/functions.mjs'
-import httpContext from 'express-http-context'
 import { validateUserByPass } from './validators/user.validator.mjs'
-import userService from '../services/user.service.mjs'
-import * as token from '../utils/token.utils.mjs'
 import { passwordVerify } from '../utils/encrypt.utils.mjs'
+import * as token from '../utils/token.utils.mjs'
 
 class Auth extends Controller {
     constructor() {
@@ -14,45 +15,28 @@ class Auth extends Controller {
     }
 
     signUp = async (req, res) => {
-        //validate user
-        let userValidation = await validateUserByPass(req.body)
+        const user = req.body
+
+        // validate user
+        const userValidation = await validateUserByPass(user)
         if (userValidation !== true) {
-            // console.log(userValidation)
-            // userValidation.forEach((error) => {
-            //     if (error.field === 'email') {
-            //         if (error.type === 'required') {
-            //             setCodeResponse({ mes: 'Email is required', status: 400 })
-            //         }
-            //         if (error.type === 'email') {
-            //             setCodeResponse({ mes: 'Email is invalid', status: 400 })
-            //         }
-            //         if (error.type === 'emailMax' || error.type === 'emailMin') {
-            //             setCodeResponse({ mes: 'Email should be between 6 and 254 characters', status: 400 })
-            //         }
-            //     }
-            //     if (error.field === 'password') {
-            //         if (error.type === 'required') {
-            //             setCodeResponse({ mes: 'Password is required', status: 400 })
-            //         }
-            //         if (error.type === 'stringMin') {
-            //             setCodeResponse({ mes: 'Password should be at least 8 characters', status: 400 })
-            //         }
-            //         if (error.type === 'stringMax') {
-            //             setCodeResponse({ mes: 'Password should be at most 255 characters', status: 400 })
-            //         }
-            //     }
-            // })
+            const errors = userValidation.map((error) =>
+                _.pick(error, ['field', 'type', 'message'])
+            )
             setCodeResponse(Code.INPUT_DATA_INVALID)
-            return this.self.response(res, {}, userValidation)
+            return this.self.response(res, {}, { errors, userValidation })
         }
 
-        // create user
-        let user
+        // SignUp user
+        const userObj = _.pick(user, ['email', 'password'])
+        /* 
+        If we don't lowercase the email, user can create a new user with a duplicate email 
+        https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html#user-ids
+        */
+        userObj.email = _.toLower(userObj.email)
+        let createdUser
         try {
-            user = await userService.create({
-                ...req.body,
-                role: UserType.USER
-            })
+            createdUser = await userService.create(userObj)
         } catch (error) {
             if (error.code === 11000 && error.keyPattern.email) {
                 setCodeResponse(Code.EMAIL_EXIST)
@@ -60,59 +44,74 @@ class Auth extends Controller {
             }
             throw error
         }
+        const cleanedUserObj = {
+            ..._.pick(createdUser, ['email', 'role', 'createdAt', 'updatedAt']),
+            id: createdUser._id
+        }
 
         // create token
-        let accessToken = token.createToken(user)
+        let accessToken = token.createToken(createdUser)
 
         //send response
         res.header('x-auth-token', accessToken)
-        return this.self.response(res, {}, { userObj: user })
+
+        setCodeResponse(Code.CREATED)
+        return this.self.response(res, cleanedUserObj, {
+            user: user,
+            createdUser: createdUser,
+            cleanedUserObj: cleanedUserObj,
+            accessToken: accessToken
+        })
     }
 
     signIn = async (req, res) => {
-        //validate user
-        let userValidation = await validateUserByPass(req.body)
+        const user = req.body
+
+        // validate user
+        const userValidation = await validateUserByPass(user)
         if (userValidation !== true) {
+            const errors = userValidation.map((error) =>
+                _.pick(error, ['field', 'type', 'message'])
+            )
             setCodeResponse(Code.INPUT_DATA_INVALID)
-            return this.self.response(res, {}, userValidation)
+            return this.self.response(res, {}, { errors, userValidation })
         }
 
-        // login and create token
+        // // login and create token
         let { email, password } = req.body
-        let user = await userService.findByEmail(email)
+        let userObj = await userService.findByEmail(_.toLower(email))
 
-        if (!user) {
-            setCodeResponse({ ...Code.AUTHENTICATION_FAILED, devMes: 'کاربری با این ایمیل ثبت نام نکرده است' })
-            return this.self.response(res, {}, req.body)
+        if (!userObj) {
+            setCodeResponse({
+                ...Code.AUTHENTICATION_FAILED,
+                devMes: 'کاربری با این ایمیل ثبت نام نکرده است'
+            })
+            return this.self.response(res, {}, { user, userObj })
         }
         try {
-            await passwordVerify(password, user.password)
+            await passwordVerify(password, userObj.password)
         } catch (error) {
             setCodeResponse({ ...Code.AUTHENTICATION_FAILED, devMes: 'رمز عبور صحیح نمی‌باشد' })
-            return this.self.response(res, {}, req.body)
+            return this.self.response(res, {}, { user, userObj, error })
+        }
+        const cleanedUserObj = {
+            ..._.pick(userObj, ['email', 'role', 'createdAt', 'updatedAt']),
+            id: userObj._id
         }
 
-        const accessToken = token.createToken(user)
+        // create token
+        let accessToken = token.createToken(userObj)
 
         //send response
         res.header('x-auth-token', accessToken)
-        return this.self.response(res, {}, {})
-    }
 
-    me = async (req, res) => {
-        if (!req.user) {
-            setCodeResponse(Code.AUTH_IS_NOT_SET)
-            return this.self.response(res, {}, {})
-        }
-        console.log(req.user)
-        const user = await userService.findById(req.user.id)
-        const userObj = {
-            id: user._id.toString(),
-            role: user.role,
-            email: user.email,
-            createdAt: user.createdAt
-        }
-        return this.self.response(res, userObj, {})
+        setCodeResponse(Code.CREATED)
+        return this.self.response(res, cleanedUserObj, {
+            user,
+            userObj,
+            cleanedUserObj,
+            accessToken
+        })
     }
 }
 
