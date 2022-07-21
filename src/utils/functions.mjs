@@ -1,23 +1,22 @@
 import { Code } from './consts.utils.mjs'
 import httpContext from 'express-http-context'
 
-
-export const response = (res, data = {}, info = {}) => {
-    let code = httpContext.get('status')
-
-    let response = { code: code ? code.num : Code.OK.num, }
-    if (process.env.NODE_ENV === 'development') {
-        response.message = code ? code.mes : Code.OK.mes
-        response.devMessage = code ? code.devMes : Code.OK.devMes
+export const response = (res, { data, info, errors, code } = props) => {
+    let responseCode = code ? code : httpContext.get('status')
+    let response = { code: responseCode ? responseCode.num : Code.OK.num }
+    if (process.env.NODE_ENV === 'dev') {
+        response.message = responseCode ? responseCode.mes : Code.OK.mes
+        response.devMessage = responseCode ? responseCode.devMes : Code.OK.devMes
         response.info = info
     }
-    response.data = data
+    response.data = data || {}
+    response.errors = errors
     return res
-        .status(code && code.status ? code.status : Code.OK.status)
+        .status(responseCode && responseCode.status ? responseCode.status : Code.OK.status)
         .json(response)
 }
 
 export const setCodeResponse = (code) => {
     let previousCode = httpContext.get('status')
-    if (!previousCode || code.num === 500) httpContext.set('status', code)
+    if (!previousCode) httpContext.set('status', code)
 }

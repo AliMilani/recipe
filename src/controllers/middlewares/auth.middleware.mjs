@@ -12,19 +12,16 @@ class Auth extends Controller {
     isAuth = async (req, res, next) => {
         let token = req.headers['x-auth-token']
         if (!token) {
-            setCodeResponse(Code.ACCESS_TOKEN_NOT_SET)
-            return this.self.response(res, {}, {})
+            return this.self.response(res, { code: Code.ACCESS_TOKEN_NOT_SET })
         }
         let user
         try {
             user = await verifyToken(token)
         } catch (err) {
-            setCodeResponse(Code.ACCESS_TOKEN_INVALID)
-            return this.self.response(res, {}, {})
+            return this.self.response(res, { code: Code.ACCESS_TOKEN_INVALID })
         }
         if (!user) {
-            setCodeResponse(Code.USER_NOT_FOUND)
-            return this.self.response(res, {}, {})
+            return this.self.response(res, { code: Code.USER_NOT_FOUND })
         }
         req.user = user
         next()
@@ -33,12 +30,13 @@ class Auth extends Controller {
     isUser = async (req, res, next) => {
         let user = req.user
         if (!user) {
-            setCodeResponse(Code.USER_NOT_FOUND)
-            return this.self.response(res, {}, {})
+            return this.self.response(res, { code: Code.USER_NOT_FOUND })
         }
         if (user.role !== UserType.USER) {
-            setCodeResponse({ ...Code.USER_NOT_FOUND, devMsg: 'User type is not a user' })
-            return this.self.response(res, {}, {})
+            return this.self.response(res, {
+                code: Code.USER_NOT_FOUND,
+                info: 'User type is not a user'
+            })
         }
         next()
     }
@@ -46,12 +44,16 @@ class Auth extends Controller {
     isAdmin = async (req, res, next) => {
         let user = req.user
         if (!user) {
-            setCodeResponse(Code.UNAUTHORIZED)
-            return this.self.response(res, {}, { user })
+            return this.self.response(res, {
+                info: { user },
+                code: Code.UNAUTHORIZED
+            })
         }
         if (user.role !== UserType.ADMIN) {
-            setCodeResponse(Code.USER_NOT_ADMIN)
-            return this.self.response(res, {}, { user })
+            return this.self.response(res, {
+                info: { user },
+                code: Code.USER_NOT_ADMIN
+            })
         }
         next()
     }

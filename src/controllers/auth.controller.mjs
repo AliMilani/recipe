@@ -23,8 +23,11 @@ class Auth extends Controller {
             const errors = userValidation.map((error) =>
                 _.pick(error, ['field', 'type', 'message'])
             )
-            setCodeResponse(Code.INPUT_DATA_INVALID)
-            return this.self.response(res, {}, { errors, userValidation })
+            return this.self.response(res, {
+                errors,
+                info: { userValidation, user },
+                code: Code.INPUT_DATA_INVALID
+            })
         }
 
         // SignUp user
@@ -39,8 +42,10 @@ class Auth extends Controller {
             createdUser = await userService.create(userObj)
         } catch (error) {
             if (error.code === 11000 && error.keyPattern.email) {
-                setCodeResponse(Code.EMAIL_EXIST)
-                return this.self.response(res, {}, {})
+                return this.self.response(res, {
+                    code: Code.EMAIL_EXIST,
+                    info: { error }
+                })
             }
             throw error
         }
@@ -55,12 +60,9 @@ class Auth extends Controller {
         //send response
         res.header('x-auth-token', accessToken)
 
-        setCodeResponse(Code.CREATED)
-        return this.self.response(res, cleanedUserObj, {
-            user: user,
-            createdUser: createdUser,
-            cleanedUserObj: cleanedUserObj,
-            accessToken: accessToken
+        return this.self.response(res, {
+            data: cleanedUserObj,
+            code: Code.CREATED
         })
     }
 
@@ -73,8 +75,11 @@ class Auth extends Controller {
             const errors = userValidation.map((error) =>
                 _.pick(error, ['field', 'type', 'message'])
             )
-            setCodeResponse(Code.INPUT_DATA_INVALID)
-            return this.self.response(res, {}, { errors, userValidation })
+            return this.self.response(res, {
+                errors,
+                info: { userValidation, user },
+                code: Code.INPUT_DATA_INVALID
+            })
         }
 
         // // login and create token
@@ -82,17 +87,21 @@ class Auth extends Controller {
         let userObj = await userService.findByEmail(_.toLower(email))
 
         if (!userObj) {
-            setCodeResponse({
-                ...Code.AUTHENTICATION_FAILED,
-                devMes: 'کاربری با این ایمیل ثبت نام نکرده است'
+            return this.self.response(res, {
+                code: {
+                    ...Code.AUTHENTICATION_FAILED,
+                    devMes: 'کاربری با این ایمیل ثبت نام نکرده است'
+                },
+                info: { user, userObj }
             })
-            return this.self.response(res, {}, { user, userObj })
         }
         try {
             await passwordVerify(password, userObj.password)
         } catch (error) {
-            setCodeResponse({ ...Code.AUTHENTICATION_FAILED, devMes: 'رمز عبور صحیح نمی‌باشد' })
-            return this.self.response(res, {}, { user, userObj, error })
+            return this.self.response(res, {
+                code: { ...Code.AUTHENTICATION_FAILED, devMes: 'رمز عبور صحیح نمی‌باشد' },
+                info: { user, userObj, error }
+            })
         }
         const cleanedUserObj = {
             ..._.pick(userObj, ['email', 'role', 'createdAt', 'updatedAt']),
@@ -105,12 +114,15 @@ class Auth extends Controller {
         //send response
         res.header('x-auth-token', accessToken)
 
-        setCodeResponse(Code.CREATED)
-        return this.self.response(res, cleanedUserObj, {
-            user,
-            userObj,
-            cleanedUserObj,
-            accessToken
+        return this.self.response(res, {
+            data: cleanedUserObj,
+            code: Code.CREATED,
+            info: {
+                user,
+                userObj,
+                cleanedUserObj,
+                accessToken
+            }
         })
     }
 }
