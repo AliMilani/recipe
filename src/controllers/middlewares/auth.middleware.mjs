@@ -1,7 +1,6 @@
 import Controller from '../controller.mjs'
 import { Code, UserType } from '../../utils/consts.utils.mjs'
 import { verifyToken } from '../../utils/token.utils.mjs'
-import { setCodeResponse } from '../../utils/functions.mjs'
 
 class Auth extends Controller {
     constructor() {

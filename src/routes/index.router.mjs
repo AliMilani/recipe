@@ -4,7 +4,7 @@ import errorMiddleware from '../controllers/middlewares/error.middleware.mjs'
 import Controller from '../controllers/controller.mjs'
 import authRouter from './auth.router.mjs'
 import userRouter from './user.router.mjs'
-import { response, setCodeResponse } from '../utils/functions.mjs'
+import { response } from '../utils/functions.mjs'
 import { Code } from '../utils/consts.utils.mjs'
 
 const router = express.Router()
@@ -21,8 +21,7 @@ router.get('/', function (req, res, next) {
 })
 
 router.all('/*', function (req, res, next) {
-    setCodeResponse(Code.ROUTE_NOT_FOUND)
-    response(res, {}, {})
+    response(res, { code: Code.ROUTE_NOT_FOUND })
 })
 
 router.use(errorMiddleware)

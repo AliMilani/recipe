@@ -2,7 +2,6 @@ import _ from 'lodash'
 import Controller from './controller.mjs'
 import userService from '../services/user.service.mjs'
 import { validateCreateUser, validateUpdateUser } from './validators/user.validator.mjs'
-import { setCodeResponse } from '../utils/functions.mjs'
 import { Code } from '../utils/consts.utils.mjs'
 import { passwordHash } from '../utils/encrypt.utils.mjs'
 
@@ -52,28 +51,28 @@ class User extends Controller {
             ..._.pick(createdUser, ['email', 'role', 'createdAt', 'updatedAt']),
             id: createdUser._id
         }
-        console.log(cleanedUserObj)
 
-        setCodeResponse()
         return this.self.response(res, {
             data: cleanedUserObj,
             code: Code.CREATED,
             info: {
-                user: user,
-                userObj: userObj,
-                createdUser: createdUser,
-                cleanedUserObj: cleanedUserObj
+                user,
+                userObj,
+                createdUser,
+                cleanedUserObj
             }
         })
     }
 
     findUserById = async (req, res) => {
-        let id = req.params.id
+        const id = req.params.id
         const user = await userService.findById(id)
 
         if (user === null) {
-            setCodeResponse(Code.USER_NOT_FOUND)
-            return this.self.response(res, {}, { id: id, user: user })
+            return this.self.response(res, {
+                code: Code.USER_NOT_FOUND,
+                info: { id: id, user: user }
+            })
         }
         const cleanedUserObj = {
             ..._.pick(user, ['email', 'role', 'createdAt', 'updatedAt']),
@@ -92,7 +91,6 @@ class User extends Controller {
         // validate user
         // check if request body is empty
         if (_.isEmpty(user)) {
-            setCodeResponse()
             return this.self.response(res, {
                 info: 'User object is empty',
                 code: Code.INPUT_DATA_INVALID
@@ -164,7 +162,7 @@ class User extends Controller {
                 info: { id: id, user: user }
             })
         }
-        let deletedUser = await userService.delete(id)
+        const deletedUser = await userService.delete(id)
         const cleanedUserObj = {
             ..._.pick(deletedUser, ['email', 'role', 'createdAt', 'updatedAt']),
             id: deletedUser._id
@@ -184,7 +182,7 @@ class User extends Controller {
                 code: Code.AUTH_IS_NOT_SET
             })
         }
-        // console.log(req.user)
+
         const user = await userService.findById(req.user.id)
         if (user === null) {
             return this.self.response(res, {

@@ -10,6 +10,8 @@ import cookieParser from 'cookie-parser'
 import { fileURLToPath } from 'url'
 import path, { dirname } from 'path'
 import indexRouter from './routes/index.router.mjs'
+import { Code } from './utils/consts.utils.mjs'
+import { response } from './utils/functions.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -38,9 +40,10 @@ const limiter = rateLimit({
     max: 500,
     windowMs: 15 * 60 * 1000, //15 minute
     handler: function (req, res) {
-        res.status(500).json({ error: 'Too many requests from this IP, please try again later.' })
-        // httpContext.set('status', Code.TOO_MANY_REQUEST)
-        // return response(res, {}, 'حداکثر ۵۰۰ درخواست مجاز')
+        return response(res, {
+            code: Code.TOO_MANY_REQUEST,
+            info: 'حداکثر ۵۰۰ درخواست مجاز'
+        })
     }
 })
 app.use('/', limiter)
