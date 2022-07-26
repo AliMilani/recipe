@@ -31,6 +31,14 @@ const updateUserSchema = {
     $$strict: true
 }
 
+// const logOutSchema = {
+//     accessToken: { ...types.accessToken, optional: true },
+//     refreshToken: types.refreshToken,
+//     $$async: true,
+//     $$strict: true
+// }
+
 export const validateUserByPass = v.compile(emailPassSchema)
 export const validateCreateUser = v.compile(createUserSchema)
 export const validateUpdateUser = v.compile(updateUserSchema)
+// export const validateLogOut = v.compile(logOutSchema)

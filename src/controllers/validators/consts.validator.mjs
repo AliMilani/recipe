@@ -26,11 +26,32 @@ export const types = {
         messages: {
             stringEnum: 'نوع کاربر نادرست است'
         }
+    },
+    refreshToken: {
+        type: 'string',
+        length: 128,
+        messages: {
+            required: 'توکن بازیابی ضروری است.',
+            stringLength: 'توکن بازیابی باید 128 کاراکتر باشد.',
+            type: 'توکن بازیابی باید از نوع رشته باشد.'
+        }
+    },
+    accessToken: {
+        type: 'string',
+        minLength: 200,
+        optional: true,
+        messages: {
+            minLength: 'توکن دسترسی باید حداقل 200 کاراکتر باشد.',
+            type: 'توکن دسترسی باید از نوع رشته باشد.'
+        },
+
+        $$async: true
     }
 }
 
 export const globalMessages = {
-    objectStrict: 'پارامتر {actual} مورد قبول نیست ، تنها موارد مشخص شده مثل {expected} مورد قبول است.',
+    objectStrict:
+        'پارامتر {actual} مورد قبول نیست ، تنها موارد مشخص شده مثل {expected} مورد قبول است.',
     required: '{field} باید پر باشد',
     min: '{field} باید حداقل {expected} کاراکتر باشد',
     max: '{field} باید حداکثر {expected} کاراکتر باشد',
@@ -43,5 +64,5 @@ export const globalMessages = {
     email: 'پست الکترونیکی نامعتبر است',
     emailMin: 'پست الکترونیکی باید حداقل 6 کاراکتر باشد',
     emailMax: 'پست الکترونیکی باید حداکثر 254 کاراکتر باشد',
-    emailEmpty: 'پست الکترونیکی نباید خالی باشد',
+    emailEmpty: 'پست الکترونیکی نباید خالی باشد'
 }

@@ -8,8 +8,8 @@
     "npm": ">=8.1.2"
   },
   "scripts": {
-    "dev": "nodemon src/bin/www.mjs",
-    "start": "node src/bin/www.mjs"
+    "dev": "nodemon src/server.mjs",
+    "start": "node src/server.mjs"
   },
   "author": "Ali Milani <59066012+AliMilani@users.noreply.github.com>",
   "license": "MIT",
