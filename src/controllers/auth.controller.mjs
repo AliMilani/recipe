@@ -3,8 +3,6 @@ import Controller from './controller.mjs'
 import userService from '../services/user.service.mjs'
 import tokenService from '../services/token.service.mjs'
 import { Code } from '../utils/consts.utils.mjs'
-import { validateUserByPass } from './validators/user.validator.mjs'
-import { validateRefreshToken } from './validators/token.validator.mjs'
 import { passwordVerify } from '../utils/encrypt.utils.mjs'
 import * as token from '../utils/token.utils.mjs'
 import { calculateCustomDate } from '../utils/date.utils.mjs'
@@ -25,19 +23,6 @@ class Auth extends Controller {
 
     signUp = async (req, res) => {
         const user = req.body
-
-        // validate user
-        const userValidation = await validateUserByPass(user)
-        if (userValidation !== true) {
-            const errors = userValidation.map((error) =>
-                _.pick(error, ['field', 'type', 'message'])
-            )
-            return this.self.response(res, {
-                errors,
-                info: { userValidation, user },
-                code: Code.INPUT_DATA_INVALID
-            })
-        }
 
         // SignUp user
         const userObj = _.pick(user, ['email', 'password'])
@@ -97,19 +82,6 @@ class Auth extends Controller {
 
     signIn = async (req, res) => {
         const user = req.body
-
-        // validate user
-        const userValidation = await validateUserByPass(user)
-        if (userValidation !== true) {
-            const errors = userValidation.map((error) =>
-                _.pick(error, ['field', 'type', 'message'])
-            )
-            return this.self.response(res, {
-                errors,
-                info: { userValidation, user },
-                code: Code.INPUT_DATA_INVALID
-            })
-        }
 
         // login
         let { email, password } = req.body
@@ -195,35 +167,17 @@ class Auth extends Controller {
     }
 
     logOut = async (req, res) => {
-        // // validate refresh token
-        // const logOutValidation = await validateLogOut({
-        //     refreshToken: req.headers['x-refresh-token'],
-        //     accessToken: req.headers['x-access-token']
-        // })
-        // if (logOutValidation !== true) {
-        //     const errors = logOutValidation.map((error) =>
-        //         _.pick(error, ['field', 'type', 'message'])
-        //     )
-        //     return this.self.response(res, {
-        //         errors,
-        //         info: { logOutValidation },
-        //         code: Code.INPUT_DATA_INVALID
-        //     })
-        // }
-
         const receivedAccessToken = req.headers['x-access-token']
         const receivedRefreshToken = req.headers['x-refresh-token']
 
         if (receivedAccessToken) {
-            // return this.self.response(res, { code: Code.ACCESS_TOKEN_NOT_SET })
-
             let decodedUser
             let tokenIsValid = false
             try {
                 decodedUser = await token.verifyAccessToken(receivedAccessToken)
                 tokenIsValid = true
             } catch (err) {
-                // console.log(err)
+                // console.info(err)
             }
             if (decodedUser && tokenIsValid) {
                 const targetToken = await tokenService.findByAccessToken(
@@ -271,19 +225,6 @@ class Auth extends Controller {
 
     refreshToken = async (req, res) => {
         const { refreshToken } = req.body
-
-        // validate refresh token
-        const refreshTokenValidation = await validateRefreshToken(req.body)
-        if (refreshTokenValidation !== true) {
-            const errors = refreshTokenValidation.map((error) =>
-                _.pick(error, ['field', 'type', 'message'])
-            )
-            return this.self.response(res, {
-                errors,
-                info: { refreshTokenValidation, refreshToken },
-                code: Code.INPUT_DATA_INVALID
-            })
-        }
 
         // get token
         const targetToken = await tokenService.findByRefreshToken(

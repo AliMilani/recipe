@@ -14,19 +14,6 @@ class User extends Controller {
     create = async (req, res) => {
         const user = req.body
 
-        // validate user
-        const userValidation = await validateCreateUser(user)
-        if (userValidation !== true) {
-            const errors = userValidation.map((error) =>
-                _.pick(error, ['field', 'type', 'message'])
-            )
-            return this.self.response(res, {
-                errors,
-                info: { userValidation },
-                code: Code.INPUT_DATA_INVALID
-            })
-        }
-
         // create user
         const userObj = _.pick(user, ['email', 'role', 'password'])
         /* 
@@ -88,22 +75,11 @@ class User extends Controller {
         const id = req.params.id
         const user = req.body
 
-        // validate user
         // check if request body is empty
         if (_.isEmpty(user)) {
             return this.self.response(res, {
                 info: 'User object is empty',
                 code: Code.INPUT_DATA_INVALID
-            })
-        }
-        const userValidation = await validateUpdateUser(user)
-        if (userValidation !== true) {
-            const errors = userValidation.map((error) =>
-                _.pick(error, ['field', 'type', 'message'])
-            )
-            return this.self.response(res, {
-                code: Code.INPUT_DATA_INVALID,
-                info: { id: id, errors, userValidation }
             })
         }
 
