@@ -52,9 +52,9 @@ function validateEnv() {
         REFRESH_TOKEN_TOTAL_ALLOWED_ROTATIONS: num({ example: '0', desc: 'Total rotations for refresh token. (0 = unlimited)' }), // 0 = unlimited
         REFRESH_TOKEN_ROTATION_IS_ENABLED: bool({ example: true, desc: 'Rotate refresh token' }),
         ACCESS_TOKEN_LIFETIME: _customDate({ example: '5m', desc: 'Access token lifetime. (e.g. 1d, 1h, 1m, 1s)' }), // 5m = 5 minutes
-        ACCESS_TOKEN_TOTAL_ALLOWED_ROTATIONS: num({ example: '8', desc: 'Total rotations for access token. (0 = unlimited)' }), // 0 = unlimited
-        ACCESS_TOKEN_ROTATION_IS_ENABLED: bool({ example: true, desc: 'Rotate access token.' }), // true = rotate, false = never rotate
-        ACCESS_TOKEN_ROTATE_TIME_PERCENTAGE: _range({ example: '80', desc: 'Access token rotate time percentage. (e.g. 80)' }, 0, 100), // 80 = 80%
+        ACCESS_TOKEN_TOTAL_ALLOWED_TIME_EXTENSIONS: num({ example: '8', desc: 'Total time extensions for access token. (0 = unlimited)' }), // 0 = unlimited
+        ACCESS_TOKEN_TIME_EXTENSION_IS_ENABLED: bool({ example: true, desc: 'Enable time extensions for access token' }),
+        ACCESS_TOKEN_EXTENSION_TIME_PERCENTAGE: _range({ example: '80', desc: 'Access token extension time percentage. (0-100) 0 = disabled' }, 0, 100),
         ACCESS_TOKEN_STRICT_IP_CHECKING: bool({ example: false, desc: 'Strict IP checking for access token.' }),
     })
 

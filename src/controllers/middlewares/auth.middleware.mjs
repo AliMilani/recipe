@@ -2,14 +2,14 @@ import Controller from '../controller.mjs'
 import tokenService from '../../services/token.service.mjs'
 import userService from '../../services/user.service.mjs'
 import { Code, UserType } from '../../utils/consts.utils.mjs'
-import { verifyAccessToken, generateHash } from '../../utils/token.utils.mjs'
+import { verifyAccessToken, generateTokenHash } from '../../utils/token.utils.mjs'
 import _ from 'lodash'
 import * as token from '../../utils/token.utils.mjs'
 
 const {
-    ACCESS_TOKEN_ROTATION_IS_ENABLED,
-    ACCESS_TOKEN_ROTATE_TIME_PERCENTAGE,
-    ACCESS_TOKEN_TOTAL_ALLOWED_ROTATIONS,
+    ACCESS_TOKEN_TIME_EXTENSION_IS_ENABLED,
+    ACCESS_TOKEN_EXTENSION_TIME_PERCENTAGE,
+    ACCESS_TOKEN_TOTAL_ALLOWED_TIME_EXTENSIONS,
     ACCESS_TOKEN_STRICT_IP_CHECKING
 } = process.env
 
@@ -42,22 +42,35 @@ class Auth extends Controller {
             throw new Error('Could not decode user')
         }
 
-        // access token rotation
-        if (ACCESS_TOKEN_ROTATION_IS_ENABLED === 'true' && ACCESS_TOKEN_TOTAL_ALLOWED_ROTATIONS !== '0') {
+        // access token time extension
+        if (
+            ACCESS_TOKEN_TIME_EXTENSION_IS_ENABLED === 'true' &&
+            ACCESS_TOKEN_TOTAL_ALLOWED_TIME_EXTENSIONS !== '0'
+        ) {
             const startAt = new Date(decodedUser.iat * 1000)
             const endAt = new Date(decodedUser.exp * 1000)
             const now = new Date()
             const timePassedInPercentage = Math.round((100 * (now - startAt)) / (endAt - startAt)) // percentage of time passed
             // console.log(`aToken timePassedInPercentage: ${timePassedInPercentage}%`)
-            if (timePassedInPercentage > parseInt(ACCESS_TOKEN_ROTATE_TIME_PERCENTAGE)) {
-                // check if the user has already rotated the access token
+            if (timePassedInPercentage > parseInt(ACCESS_TOKEN_EXTENSION_TIME_PERCENTAGE)) {
+                // check if the user has already extended the time of the access token
                 const targetToken = await tokenService.findByAccessToken(
-                    generateHash(receivedAccessToken)
+                    generateTokenHash(receivedAccessToken), {
+                    includePreviousToken: true,
+                    onlyActiveTokens: true
+                }
                 )
                 if (targetToken === null) {
                     return this.self.response(res, {
                         code: Code.ACCESS_TOKEN_EXPIRED,
-                        info: 'access token does not exist ( may be rotated )'
+                        info: 'access token does not exist in the database'
+                    })
+                }
+                // isActive should be true
+                if (targetToken.isActive === false) {
+                    return this.self.response(res, {
+                        code: Code.ACCESS_TOKEN_EXPIRED,
+                        info: 'access token is not active ( may be user logged out )'
                     })
                 }
                 // access token last ip check
@@ -69,17 +82,25 @@ class Auth extends Controller {
                         })
                     }
                 }
-
-                // access token rotated time does not equal to provided token
-                if (decodedUser.tokenCreatedAt !== targetToken.aTokenCreatedAt) {
+                // if it uses the previous access token, the time extension process should be ignored
+                if (decodedUser.tokenCreatedAt === targetToken.aPreviousTokenCreatedAt) {
+                    req.user = decodedUser
+                    return next()
+                }
+                // access token create time does not equal to provided token
+                if (
+                    decodedUser.tokenCreatedAt !== targetToken.aTokenCreatedAt
+                ) {
                     return this.self.response(res, {
                         code: Code.ACCESS_TOKEN_EXPIRED,
-                        info: 'access token created time does not equal to provided token (rotated time)'
+                        info: 'access token create time does not equal to provided token (create time)'
                     })
                 }
-                const totalAllowedRotations = parseInt(ACCESS_TOKEN_TOTAL_ALLOWED_ROTATIONS)
-                // check total rotations allowed
-                if (targetToken && targetToken.aTotalRotations < totalAllowedRotations) {
+                const totalAllowedTimeExtension = parseInt(
+                    ACCESS_TOKEN_TOTAL_ALLOWED_TIME_EXTENSIONS
+                )
+                // check the total allowed time extensions
+                if (targetToken && targetToken.aTotalTimeExtensions < totalAllowedTimeExtension) {
                     const targetUser = await userService.findById(targetToken.userId)
                     if (!targetUser) {
                         return this.self.response(res, {
@@ -87,14 +108,16 @@ class Auth extends Controller {
                             info: 'user does not exist'
                         })
                     }
-                    // rotate access token
+                    // extension of access token time
                     const accessToken = token.createAccessToken(targetUser.toObject())
                     const newTokenDecodedUser = await token.verifyAccessToken(accessToken)
                     const { tokenCreatedAt } = newTokenDecodedUser
                     const updatedToken = await tokenService.updateById(targetToken._id, {
-                        aTotalRotations: targetToken.aTotalRotations + 1,
+                        aTotalTimeExtensions: targetToken.aTotalTimeExtensions + 1,
+                        aPreviousTokenHash: targetToken.aTokenHash,
+                        aPreviousTokenCreatedAt: targetToken.aTokenCreatedAt,
                         aTokenCreatedAt: tokenCreatedAt,
-                        aTokenHash: generateHash(accessToken)
+                        aTokenHash: generateTokenHash(accessToken)
                     })
                     if (updatedToken === null) {
                         return this.self.response(res, {
@@ -105,14 +128,17 @@ class Auth extends Controller {
                     res.set('x-set-access-token', accessToken)
                     req.user = newTokenDecodedUser
                     return next()
-                } else if (targetToken && targetToken.aTotalRotations >= totalAllowedRotations) {
-                    // user has reached the maximum number of rotations
+                } else if (
+                    targetToken &&
+                    targetToken.aTotalTimeExtensions >= totalAllowedTimeExtension
+                ) {
+                    // user has reached the maximum number of time extension
                     return this.self.response(res, {
                         code: Code.ACCESS_TOKEN_EXPIRED,
-                        info: 'Maximum number of rotations reached'
+                        info: 'Maximum number of time extension reached'
                     })
                 } else {
-                    throw new Error('Could not rotate access token')
+                    throw new Error('Could not update access token')
                 }
             }
         }

@@ -23,7 +23,7 @@ const tokenSchema = new Schema(
             default: 0,
             min: 0
         },
-        aTotalRotations: {
+        aTotalTimeExtensions: {
             type: Number,
             default: 0,
             min: 0
@@ -72,6 +72,18 @@ const tokenSchema = new Schema(
         loginTime: {
             type: Date,
             default: Date.now()
+        },
+        isActive: {
+            type: Boolean,
+            default: true
+        },
+        aPreviousTokenHash: {
+            type: String,
+            default: ''
+        },
+        aPreviousTokenCreatedAt: {
+            type: Number,
+            default: 0
         }
     },
     {

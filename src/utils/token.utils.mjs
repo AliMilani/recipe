@@ -25,6 +25,10 @@ export const verifyAccessToken = (token) =>
     })
 
 export const createRefreshToken = () => crypto.randomBytes(64).toString('hex')
-
-export const generateHash = (token) =>
+/**
+ * This function generates hash value with TOKEN_SECRET based on sha256
+ * @param {String} token 
+ * @returns {String} hash value
+ */
+export const generateTokenHash = (token) =>
     crypto.createHmac('sha256', process.env.TOKEN_SECRET).update(token.toString()).digest('hex')

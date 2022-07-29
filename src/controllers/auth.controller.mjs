@@ -66,8 +66,8 @@ class Auth extends Controller {
         // create token
         const accessToken = token.createAccessToken(createdUser)
         const refreshToken = token.createRefreshToken()
-        const rTokenHash = token.generateHash(refreshToken)
-        const aTokenHash = token.generateHash(accessToken)
+        const rTokenHash = token.generateTokenHash(refreshToken)
+        const aTokenHash = token.generateTokenHash(accessToken)
         const { tokenCreatedAt } = await token.verifyAccessToken(accessToken)
         const tokenObj = {
             rTokenHash,
@@ -75,7 +75,7 @@ class Auth extends Controller {
             userId: createdUser._id,
             loginIP: req.ip,
             aTokenLastIP: req.ip,
-            aTokenCreatedAt: tokenCreatedAt,
+            aTokenCreatedAt: tokenCreatedAt
         }
         let createdToken = await tokenService.create(tokenObj)
         if (!createdToken) {
@@ -138,7 +138,7 @@ class Auth extends Controller {
         }
 
         // create token
-        const activeSession = await tokenService.findActiveSessions(loggedInUser._id)
+        const activeSession = await tokenService.findUserActiveSessions(loggedInUser._id)
         const totalActiveSessionPerUser = parseInt(TOTAL_ACTIVE_SESSION_PER_USER_RESTRICTION)
         if (
             totalActiveSessionPerUser !== 0 &&
@@ -150,15 +150,17 @@ class Auth extends Controller {
                 return new Date(a.rValidUntil).getTime() - new Date(b.rValidUntil).getTime()
             })
             // console.log(sortedSessions.length);
-            //remove old sessions
+            //deactivate old sessions
             for (let i = 0; i <= sortedSessions.length - totalActiveSessionPerUser; i++) {
-                await tokenService.deleteById(sortedSessions[i]._id)
+                await tokenService.updateById(sortedSessions[i]._id, {
+                    isActive: false
+                })
             }
         }
         const accessToken = token.createAccessToken(loggedInUser)
         const refreshToken = token.createRefreshToken()
-        const rTokenHash = token.generateHash(refreshToken)
-        const aTokenHash = token.generateHash(accessToken)
+        const rTokenHash = token.generateTokenHash(refreshToken)
+        const aTokenHash = token.generateTokenHash(accessToken)
         const { tokenCreatedAt } = await token.verifyAccessToken(accessToken)
         const tokenObj = {
             rTokenHash,
@@ -166,7 +168,7 @@ class Auth extends Controller {
             userId: loggedInUser._id,
             loginIP: req.ip,
             aTokenLastIP: req.ip,
-            aTokenCreatedAt: tokenCreatedAt,
+            aTokenCreatedAt: tokenCreatedAt
         }
         let createdToken = await tokenService.create(tokenObj)
         if (!createdToken) {
@@ -225,11 +227,13 @@ class Auth extends Controller {
             }
             if (decodedUser && tokenIsValid) {
                 const targetToken = await tokenService.findByAccessToken(
-                    token.generateHash(receivedAccessToken)
+                    token.generateTokenHash(receivedAccessToken)
                 )
                 if (targetToken) {
-                    const deletedToken = await tokenService.deleteById(targetToken._id)
-                    if (deletedToken) {
+                    const deactivatedToken = await tokenService.updateById(targetToken._id, {
+                        isActive: false
+                    })
+                    if (deactivatedToken) {
                         return this.self.response(res, {
                             code: Code.OK,
                             info: 'logout success (by access token)'
@@ -240,33 +244,29 @@ class Auth extends Controller {
         }
         if (receivedRefreshToken) {
             const targetToken = await tokenService.findByRefreshToken(
-                token.generateHash(receivedRefreshToken)
+                token.generateTokenHash(receivedRefreshToken)
             )
             if (targetToken) {
-                const deletedToken = await tokenService.deleteById(targetToken._id)
-                if (deletedToken) {
+                const deactivatedToken = await tokenService.updateById(targetToken._id, {
+                    isActive: false
+                })
+                if (deactivatedToken) {
                     return this.self.response(res, {
                         code: Code.OK,
                         info: 'logout success (by refresh token)'
                     })
                 }
-                throw new Error('Failed to delete token')
-            }
-            else {
+                throw new Error('Failed to deactivate token')
+            } else {
                 // token not found
                 return this.self.response(res, {
                     code: Code.TOKEN_DOES_NOT_EXIST,
-                    info: "refresh token not found in database"
+                    info: 'refresh token not found in database'
                 })
             }
         } else {
             return this.self.response(res, { code: Code.REFRESH_TOKEN_NOT_SET })
         }
-        // send response if no token found
-        return this.self.response(res, {
-            code: Code.TOKEN_EXPIRED,
-            info: { message: 'logout failed (tokens not found or expired)' }
-        })
     }
 
     refreshToken = async (req, res) => {
@@ -286,12 +286,18 @@ class Auth extends Controller {
         }
 
         // get token
-        const targetToken = await tokenService.findByRefreshToken(token.generateHash(refreshToken))
+        const targetToken = await tokenService.findByRefreshToken(
+            token.generateTokenHash(refreshToken)
+        )
         // check if token exist
         if (!targetToken) {
             return this.self.response(res, {
                 code: Code.TOKEN_DOES_NOT_EXIST,
-                info: { refreshToken, targetToken, message: 'maybe the token was rotated or user logged out' }
+                info: {
+                    refreshToken,
+                    targetToken,
+                    message: 'maybe the token was rotated or user logged out'
+                }
             })
         }
 
@@ -317,7 +323,11 @@ class Auth extends Controller {
         if (new Date(targetToken.rValidUntil).getTime() < new Date().getTime()) {
             return this.self.response(res, {
                 code: Code.REFRESH_TOKEN_EXPIRED,
-                info: { refreshToken, targetToken, message: 'refresh token expired by expiration time' }
+                info: {
+                    refreshToken,
+                    targetToken,
+                    message: 'refresh token expired by expiration time'
+                }
             })
         }
 
@@ -344,7 +354,7 @@ class Auth extends Controller {
             } else {
                 // use old refresh tokens because rotate limit is not reached
                 newRefreshToken = token.createRefreshToken()
-                rTokenHash = token.generateHash(newRefreshToken)
+                rTokenHash = token.generateTokenHash(newRefreshToken)
                 rTotalRotations++
                 // console.log(rTokenHash)
             }
@@ -357,7 +367,7 @@ class Auth extends Controller {
             throw new Error('Failed to generate new refresh token')
         }
         const newAccessToken = token.createAccessToken(targetUser)
-        const aTokenHash = token.generateHash(newAccessToken)
+        const aTokenHash = token.generateTokenHash(newAccessToken)
         const { tokenCreatedAt } = await token.verifyAccessToken(newAccessToken)
         const tokenObj = {
             rTokenHash,
@@ -366,7 +376,7 @@ class Auth extends Controller {
             aTokenLastIP: req.ip,
             userId: targetUser._id,
             aTokenCreatedAt: tokenCreatedAt,
-            rValidUntil: calculateCustomDate(REFRESH_TOKEN_EXPIRATION_TIME),
+            rValidUntil: calculateCustomDate(REFRESH_TOKEN_EXPIRATION_TIME)
         }
         let updatedToken = await tokenService.updateById(targetToken._id, tokenObj)
         if (!updatedToken) {
