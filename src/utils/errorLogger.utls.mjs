@@ -7,6 +7,25 @@ export default function () {
         rejectionHandlers: [new winston.transports.File({ filename: './logs/rejections.log' })]
     })
 
+    // human readable console output
+    logger.add(
+        new winston.transports.Console({
+            level: 'info',
+            format: winston.format.combine(
+                winston.format.colorize({
+                    colors: {
+                        info: 'cyan',
+                    }
+                }),
+                winston.format.cli({
+                    message: true
+                })
+            ),
+            handleExceptions: true,
+            handleRejections: true
+        })
+    )
+
     winston.add(new winston.transports.File({ filename: './logs/logfile.log' }))
 
     return logger
