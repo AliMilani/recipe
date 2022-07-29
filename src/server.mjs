@@ -3,15 +3,11 @@
 /**
  * Module dependencies.
 */
-
-
 import './utils/loadEnv.mjs' // should be first!
+import './utils/loadLogger.mjs' // should be before app module import
 import app from './app.mjs'
 import http from 'http'
-import errorLoggerUtls from './utils/errorLogger.utls.mjs'
 
-const mongoURL = process.env.MONGODB_URI
-errorLoggerUtls(mongoURL)
 
 /**
  *  database setup
@@ -19,12 +15,12 @@ errorLoggerUtls(mongoURL)
 import mongoose from 'mongoose'
 
 mongoose
-    .connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true })
+    .connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then((conn) => {
         console.log(`MongoDB Connected: ${conn.connection.host}`)
     })
     .catch((err) => {
-        console.log('mongoDb is not connected: ')
+        console.info('mongoDb is not connected: ')
         throw new Error(err.message)
     })
 
