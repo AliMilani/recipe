@@ -46,6 +46,16 @@ export const types = {
         },
 
         $$async: true
+    },
+    passwordResetToken: {
+        type: 'string',
+        length: 16,
+        messages: {
+            length: 'توکن بازیابی باید 16 کاراکتر باشد',
+            type: 'توکن بازیابی باید از نوع رشته باشد.',
+            required: 'توکن بازیابی الزامی است',
+            stringLength: 'توکن بازیابی باید 16 کاراکتر باشد'
+        }
     }
 }
 
@@ -64,5 +74,6 @@ export const globalMessages = {
     email: 'پست الکترونیکی نامعتبر است',
     emailMin: 'پست الکترونیکی باید حداقل 6 کاراکتر باشد',
     emailMax: 'پست الکترونیکی باید حداکثر 254 کاراکتر باشد',
-    emailEmpty: 'پست الکترونیکی نباید خالی باشد'
+    emailEmpty: 'پست الکترونیکی نباید خالی باشد',
+    stringLength: '{field} باید {expected} کاراکتر باشد',
 }

@@ -203,7 +203,8 @@ export const Code = {
     CATEGORY_TYPE_NOT_EXIST: { msgCode: 36, mes: 'نوع دسته بندی وجود ندارد' },
     CATEGORY_ALREADY_EXIST: { msgCode: 37, mes: 'دسته بندی تکراری است' },
     CATEGORY_FOR_PRODUCT: { msgCode: 38, mes: 'این دسته بندی برای محصول است' },
-    ERROR_UPLOAD_FILE: { msgCode: 45, mes: 'خطایی در آپلود فایل رخ داده است' }
+    ERROR_UPLOAD_FILE: { msgCode: 45, mes: 'خطایی در آپلود فایل رخ داده است' },
+    PASSWORD_ALREADY_USED: { msgCode: 46, mes: 'رمزعبور قبلا استفاده شده است' },
 }
 
 export const UserType = Object.freeze({

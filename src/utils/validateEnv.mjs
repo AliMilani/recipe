@@ -36,7 +36,9 @@ const _customDate = makeValidator((customDate) => {
 /* prettier-ignore */
 
 function validateEnv() {
-    let envs = cleanEnv(process.env, {
+    const EMAIL_ADDRESS_REGEX = /^\S+@\S+\.\S+$/
+
+    const envs = cleanEnv(process.env, {
         NODE_ENV: str({
             choices: ['dev', 'production'],
             desc: 'The environment in which the app is running  (e.g. dev, production)',
@@ -56,6 +58,13 @@ function validateEnv() {
         ACCESS_TOKEN_TIME_EXTENSION_IS_ENABLED: bool({ example: true, desc: 'Enable time extensions for access token' }),
         ACCESS_TOKEN_EXTENSION_TIME_PERCENTAGE: _range({ example: '80', desc: 'Access token extension time percentage. (0-100) 0 = disabled' }, 0, 100),
         ACCESS_TOKEN_STRICT_IP_CHECKING: bool({ example: false, desc: 'Strict IP checking for access token.' }),
+        PASSWORD_RESET_EXPIRATION_TIME: _customDate({ example: '15m', desc: 'Password reset expiration time. (e.g. 1d, 1h, 1m, 1s)' }),
+        MAIL_SENDER: _match({ desc: 'The email address used to send emails', example: 'user@example.com' }, EMAIL_ADDRESS_REGEX),
+        MAIL_USER: _match({ desc: 'The email address used to connect to the mail server', example: 'user@example.com' }, EMAIL_ADDRESS_REGEX),
+        MAIL_PASSWORD: str({ desc: 'The password used to connect to the mail server' }),
+        MAIL_PORT: port({ desc: 'The port used to connect to the mail server', example: '587' }),
+        MAIL_HOST: str({ desc: 'The host used to connect to the mail server', example: 'smtp.example.com' }),
+
     })
 
     // Preliminary examination of logical errors

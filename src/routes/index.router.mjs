@@ -4,6 +4,7 @@ import errorMiddleware from '../controllers/middlewares/error.middleware.mjs'
 import Controller from '../controllers/controller.mjs'
 import authRouter from './auth.router.mjs'
 import userRouter from './user.router.mjs'
+import passwordResetRouter from './passwordReset.router.mjs'
 import { response } from '../utils/functions.mjs'
 import { Code } from '../utils/consts.utils.mjs'
 
@@ -14,6 +15,7 @@ router.use(new Controller().log)
 
 router.use('/auth', authRouter)
 router.use('/users', userRouter)
+router.use('/password', passwordResetRouter)
 
 /* GET home page. */
 router.get('/', function (req, res, next) {

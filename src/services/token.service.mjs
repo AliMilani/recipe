@@ -161,6 +161,15 @@ class Token {
      * //=> if token is not found, token will be null
      */
     deleteById = async (id) => await tokenModel.findOneAndDelete({ _id: id })
+
+    /**
+     * - this function is used to deactivate all user tokens by user id
+     * @param {String} userId user id
+     * 
+     * @returns {Promise<Object> | Promise<null>} token object
+     */
+    deactivateAllByUserId = async (userId) =>
+        await tokenModel.updateMany({ userId }, { isActive: false })
 }
 
 export default new Token()
