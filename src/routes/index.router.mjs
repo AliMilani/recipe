@@ -2,23 +2,30 @@ import express, { application } from 'express'
 import cors from 'cors'
 import errorMiddleware from '../controllers/middlewares/error.middleware.mjs'
 import Controller from '../controllers/controller.mjs'
-// import userRouter from './user.router.mjs'
+import authRouter from './auth.router.mjs'
+import userRouter from './user.router.mjs'
+import passwordResetRouter from './passwordReset.router.mjs'
+import { response } from '../utils/functions.mjs'
+import { Code } from '../utils/consts.utils.mjs'
 
 const router = express.Router()
 
 router.use(cors())
 router.use(new Controller().log)
 
-// router.use('/users', userRouter)
-router.use(errorMiddleware)
+router.use('/auth', authRouter)
+router.use('/users', userRouter)
+router.use('/password', passwordResetRouter)
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
     res.render('index', { title: 'Express' })
 })
 
-router.get('/*', function (req, res, next) {
-    res.send('404')
+router.all('/*', function (req, res, next) {
+    response(res, { code: Code.ROUTE_NOT_FOUND })
 })
+
+router.use(errorMiddleware)
 
 export default router
