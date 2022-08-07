@@ -38,7 +38,6 @@ class ResetPassword extends Controller {
     }
 
     request = async (req, res) => {
-        // TODO: add rate limit (by IP address) to prevent DOS and user enumeration attacks
         const requestStartTime = new Date().getTime()
         let { email } = req.body
         email = _.toLower(email)
@@ -64,7 +63,6 @@ class ResetPassword extends Controller {
                 await new Promise((resolve) =>
                     setTimeout(resolve, delayTime > 10000 ? 10000 : delayTime)
                 )
-                // TODO: the (not found) email should be restricted after 5 requests in the last 10 minutes
                 return this.self.response(res, {
                     code: Code.OK,
                     info: {
@@ -76,27 +74,6 @@ class ResetPassword extends Controller {
             } catch (err) {
                 throw new Error(`Error sending email : ${err}`)
             }
-        }
-        // To prevent DOS attacks, the number of password reset requests should be limited
-        const passwordResetRequests = await passwordResetService.findAllByUserId(targetUser.id)
-        const TEN_MINUTES_IN_MS = 10 * 60 * 1000
-        const totalRequestsAtLast10Minutes = _.sumBy(passwordResetRequests, (request) => {
-            const requestTime = new Date(request.createdAt).getTime()
-
-            return Date.now() - requestTime < TEN_MINUTES_IN_MS ? 1 : 0
-        })
-        // console.log(`totalRequestsAtLast10Minutes: ${totalRequestsAtLast10Minutes}`)
-
-        const TOTAL_REQUESTS_LIMIT = 5 // per 10 minutes
-        if (totalRequestsAtLast10Minutes >= TOTAL_REQUESTS_LIMIT) {
-            // console.info('password reset requests limit reached')
-            return this.self.response(res, {
-                code: Code.PASSWORD_RESET_FAILED,
-                info: {
-                    message: `در 10 دقیقه اخیر بیشتر از ${TOTAL_REQUESTS_LIMIT} درخواست داده اید - لطفا بعدا تلاش کنید`,
-                    totalRequestsAtLast10Minutes
-                }
-            })
         }
 
         //invalidate all previous password reset tokens for security reasons
@@ -138,7 +115,7 @@ class ResetPassword extends Controller {
             info: {
                 message: 'ایمیل بازیابی رمز عبور با موفقیت ارسال شد',
                 lastTenCreateResponseTime: this.#last10SuccessfulCreateResponseTime,
-                totalRequestsAtLast10Minutes,
+                // totalRequestsAtLast10Minutes,
                 passwordResetToken
             }
         })
@@ -151,7 +128,7 @@ class ResetPassword extends Controller {
         )
         if (!(await this.#checkTokenValidity(targetPasswordReset))) {
             return this.self.response(res, {
-                code: Code.TOKEN_EXPIRED,
+                code: Code.PASSWORD_RESET_TOKEN_EXPIRED,
                 info: 'توکن بازیابی رمز عبور منقضی شده است'
             })
         }
@@ -173,19 +150,20 @@ class ResetPassword extends Controller {
 
         if (!(await this.#checkTokenValidity(targetPasswordReset))) {
             return this.self.response(res, {
-                code: Code.TOKEN_EXPIRED
+                code: Code.PASSWORD_RESET_TOKEN_EXPIRED
             })
         }
 
         const targetUser = await userService.findById(targetPasswordReset.userId)
 
         if (targetUser === null) {
-            return this.self.response(res, {
-                code: Code.USER_NOT_FOUND,
-                info: {
-                    message: 'کاربر مورد نظر یافت نشد'
-                }
-            })
+            throw new Error(`User not found with id ${targetPasswordReset.userId}`)
+            // return this.self.response(res, {
+            //     code: Code.USER_NOT_FOUND,
+            //     info: {
+            //         message: 'کاربر مورد نظر یافت نشد'
+            //     }
+            // })
         }
 
         // users shouldn't provide the old password as a new password

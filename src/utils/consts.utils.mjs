@@ -205,6 +205,7 @@ export const Code = {
     CATEGORY_FOR_PRODUCT: { msgCode: 38, mes: 'این دسته بندی برای محصول است' },
     ERROR_UPLOAD_FILE: { msgCode: 45, mes: 'خطایی در آپلود فایل رخ داده است' },
     PASSWORD_ALREADY_USED: { msgCode: 46, mes: 'رمزعبور قبلا استفاده شده است' },
+    PASSWORD_RESET_TOKEN_EXPIRED: { msgCode: 47, mes: 'توکن تغییر رمزعبور منقضی شده است' }
 }
 
 export const UserType = Object.freeze({

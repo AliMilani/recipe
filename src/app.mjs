@@ -9,6 +9,7 @@ import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import { fileURLToPath } from 'url'
 import path, { dirname } from 'path'
+import apiRateLimit from './controllers/middlewares/apiRateLimit.middleware.mjs'
 import indexRouter from './routes/index.router.mjs'
 import { Code } from './utils/consts.utils.mjs'
 import { response } from './utils/functions.mjs'
@@ -36,17 +37,13 @@ app.use(httpContext.middleware)
 // Set security HTTP headers
 app.use(helmet())
 // Limit requests from same API
-const limiter = rateLimit({
-    max: 500,
-    windowMs: 15 * 60 * 1000, //15 minute
-    handler: function (req, res) {
-        return response(res, {
-            code: Code.TOO_MANY_REQUEST,
-            info: 'حداکثر ۵۰۰ درخواست مجاز'
-        })
-    }
-})
-app.use('/', limiter)
+app.use(
+    '/',
+    apiRateLimit({
+        max: 500,
+        windowMs: 15 * 60 * 1000 /* 15 min */
+    })
+)
 // Data sanitization against NoSQL query injection
 app.use(mongoSanitize())
 // Data sanitization against XSS
@@ -55,5 +52,9 @@ app.use(xss())
 app.use(hpp())
 
 app.use(indexRouter)
+
+app.get('/api', (req, res) => {
+    res.send('API')
+})
 
 export default app

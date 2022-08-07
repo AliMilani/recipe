@@ -11,7 +11,6 @@ const {
     TOTAL_ACTIVE_SESSION_PER_USER_RESTRICTION,
     REFRESH_TOKEN_ROTATION_IS_ENABLED,
     REFRESH_TOKEN_EXPIRATION_TIME,
-    // REFRESH_TOKEN_LIFETIME,
     REFRESH_TOKEN_TOTAL_ALLOWED_ROTATIONS
 } = process.env
 
@@ -38,7 +37,7 @@ class Auth extends Controller {
             if (error.code === 11000 && error.keyPattern.email) {
                 return this.self.response(res, {
                     code: Code.EMAIL_EXIST,
-                    info: { error }
+                    info: 'Email already exists in the database'
                 })
             }
             throw error
@@ -85,32 +84,29 @@ class Auth extends Controller {
 
         // login
         let { email, password } = req.body
-        const loggedInUser = await userService.findByEmail(_.toLower(email))
+        const targetUser = await userService.findByEmail(_.toLower(email))
 
-        if (!loggedInUser) {
+        if (!targetUser) {
             return this.self.response(res, {
-                code: {
-                    ...Code.AUTHENTICATION_FAILED,
-                    devMes: 'کاربری با این ایمیل ثبت نام نکرده است'
-                },
-                info: { user, userObj: loggedInUser }
+                code: Code.USER_NOT_FOUND,
+                info: 'No user found with this email'
             })
         }
         try {
-            await passwordVerify(password, loggedInUser.password)
+            await passwordVerify(password, targetUser.password)
         } catch (error) {
             return this.self.response(res, {
-                code: { ...Code.AUTHENTICATION_FAILED, devMes: 'رمز عبور صحیح نمی‌باشد' },
-                info: { user, userObj: loggedInUser, error }
+                code: Code.LOGIN_INVALID,
+                info: { user, userObj: targetUser, error }
             })
         }
         const cleanedUserObj = {
-            ..._.pick(loggedInUser, ['email', 'role', 'createdAt', 'updatedAt']),
-            id: loggedInUser._id
+            ..._.pick(targetUser, ['email', 'role', 'createdAt', 'updatedAt']),
+            id: targetUser._id
         }
 
         // create token
-        const activeSession = await tokenService.findUserActiveSessions(loggedInUser._id)
+        const activeSession = await tokenService.findUserActiveSessions(targetUser._id)
         const totalActiveSessionPerUser = parseInt(TOTAL_ACTIVE_SESSION_PER_USER_RESTRICTION)
         if (
             totalActiveSessionPerUser !== 0 &&
@@ -129,7 +125,7 @@ class Auth extends Controller {
                 })
             }
         }
-        const accessToken = token.createAccessToken(loggedInUser)
+        const accessToken = token.createAccessToken(targetUser)
         const refreshToken = token.createRefreshToken()
         const rTokenHash = token.generateTokenHash(refreshToken)
         const aTokenHash = token.generateTokenHash(accessToken)
@@ -137,7 +133,7 @@ class Auth extends Controller {
         const tokenObj = {
             rTokenHash,
             aTokenHash,
-            userId: loggedInUser._id,
+            userId: targetUser._id,
             loginIP: req.ip,
             aTokenLastIP: req.ip,
             aTokenCreatedAt: tokenCreatedAt
@@ -158,7 +154,7 @@ class Auth extends Controller {
             code: Code.CREATED,
             info: {
                 user,
-                userObj: loggedInUser,
+                userObj: targetUser,
                 cleanedUserObj,
                 accessToken,
                 refreshToken
