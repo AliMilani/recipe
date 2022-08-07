@@ -26,6 +26,18 @@ app.set('view engine', 'ejs')
 
 app.use(morgan('dev'))
 app.use(express.json({ limit: '10kb' }))
+app.use((err, req, res, next) => {
+    if (err.type === 'entity.parse.failed') {
+        return response(res, { code: Code.JSON_SYNTAX_ERROR, info: { err } })
+    }
+    if (err.type === 'entity.too.large') {
+        return response(res, {
+            code: Code.PAYLOAD_TOO_LARGE,
+            info: { err }
+        })
+    }
+    throw err
+})
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname, 'public')))
@@ -50,6 +62,8 @@ app.use(mongoSanitize())
 app.use(xss())
 // Prevent parameter pollution
 app.use(hpp())
+// Reduce server fingerprinting
+app.disable('x-powered-by')
 
 app.use(indexRouter)
 
