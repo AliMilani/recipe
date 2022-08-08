@@ -200,11 +200,24 @@ export const Code = {
         devMes: 'verify unknown order',
         status: 500
     },
+    JSON_SYNTAX_ERROR: {
+        msgCode: 50010,
+        mes: 'JSON syntax error',
+        devMes: 'JSON syntax error',
+        status: 400
+    },
+    PAYLOAD_TOO_LARGE: {
+        msgCode: 50011,
+        mes: 'Request entity too large',
+        devMes: 'Request entity too large',
+        status: 413
+    },
     CATEGORY_TYPE_NOT_EXIST: { msgCode: 36, mes: 'نوع دسته بندی وجود ندارد' },
     CATEGORY_ALREADY_EXIST: { msgCode: 37, mes: 'دسته بندی تکراری است' },
     CATEGORY_FOR_PRODUCT: { msgCode: 38, mes: 'این دسته بندی برای محصول است' },
     ERROR_UPLOAD_FILE: { msgCode: 45, mes: 'خطایی در آپلود فایل رخ داده است' },
     PASSWORD_ALREADY_USED: { msgCode: 46, mes: 'رمزعبور قبلا استفاده شده است' },
+    PASSWORD_RESET_TOKEN_EXPIRED: { msgCode: 47, mes: 'توکن تغییر رمزعبور منقضی شده است' }
 }
 
 export const UserType = Object.freeze({
