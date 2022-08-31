@@ -310,6 +310,7 @@ class Auth extends Controller {
             rTokenHash,
             aTokenHash,
             rTotalRotations,
+            aTotalTimeExtensions: 0,
             aTokenLastIP: req.ip,
             userId: targetUser._id,
             aTokenCreatedAt: tokenCreatedAt,
