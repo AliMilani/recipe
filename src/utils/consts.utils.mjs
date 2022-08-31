@@ -212,28 +212,64 @@ export const Code = {
         devMes: 'Request entity too large',
         status: 413
     },
+    SLUG_ALREADY_EXIST: {
+        msgCode: 50012,
+        mes: 'اسلاگ تکراری است',
+        status: 406
+    },
     CATEGORY_TYPE_NOT_EXIST: { msgCode: 36, mes: 'نوع دسته بندی وجود ندارد' },
     CATEGORY_ALREADY_EXIST: { msgCode: 37, mes: 'دسته بندی تکراری است' },
     CATEGORY_FOR_PRODUCT: { msgCode: 38, mes: 'این دسته بندی برای محصول است' },
     ERROR_UPLOAD_FILE: { msgCode: 45, mes: 'خطایی در آپلود فایل رخ داده است' },
     PASSWORD_ALREADY_USED: { msgCode: 46, mes: 'رمزعبور قبلا استفاده شده است' },
-    PASSWORD_RESET_TOKEN_EXPIRED: { msgCode: 47, mes: 'توکن تغییر رمزعبور منقضی شده است' }
+    PASSWORD_RESET_TOKEN_EXPIRED: { msgCode: 47, mes: 'توکن تغییر رمزعبور منقضی شده است' },
+    TAG_ALREADY_EXIST: { msgCode: 48, mes: 'تگ تکراری است' },
+    INGREDIENT_ALREADY_EXIST: { msgCode: 49, mes: 'ماده اولیه تکراری است' },
+    CHEF_ALREADY_EXIST: { msgCode: 50, mes: 'سرآشپز تکراری است' },
+    CATEGORY_NOT_FOUND: { msgCode: 51, mes: 'دسته بندی یافت نشد' },
+    SUB_CATEGORY_NOT_FOUND: { msgCode: 52, mes: 'زیر دسته بندی یافت نشد' },
+    TAG_NOT_FOUND: { msgCode: 53, mes: 'تگ یافت نشد' },
+    RECIPE_NOT_FOUND: { msgCode: 54, mes: 'دستور پخت یافت نشد' },
+    INVALID_ID: { msgCode: 55, mes: 'آیدی نامعتبر است' },
+    TAG_TYPE_NOT_ALLOWED: { msgCode: 56, mes: 'نوع تگ مجاز نیست' },
+    INGREDIENT_NOT_FOUND: { msgCode: 57, mes: 'ماده اولیه یافت نشد' },
+    CHEF_NOT_FOUND: { msgCode: 58, mes: 'سرآشپز یافت نشد' },
+
 }
 
 export const UserType = Object.freeze({
     USER: 'USER',
-    ADMIN: 'ADMIN'
+    ADMIN: 'ADMIN',
+    AUTHOR: 'AUTHOR',
+    CHEF: 'CHEF',
 })
 
-export const OrderStatus = Object.freeze({
-    CANCELLED: 'CANCELLED',
-    ACTIVE: 'ACTIVE',
-    INACTIVE: 'INACTIVE'
+export const RecipeDifficulty = Object.freeze({
+    VERY_EASY: 'VERY_EASY',
+    EASY: 'EASY',
+    MEDIUM: 'MEDIUM',
+    HARD: 'HARD',
+    VERY_HARD: 'VERY_HARD'
 })
 
-export const PaymentStatus = Object.freeze({
-    BEFORE_PAYMENT: 'BEFORE_PAYMENT',
-    PENDING: 'PENDING',
-    FAILED: 'FAILED',
-    SUCCESSFUL: 'SUCCESSFUL'
+export const RecipeTagType = Object.freeze({
+    DIET: 'DIET',
+    COOKING_TYPE: 'COOKING_TYPE',
+    CUISINE_TYPE: 'CUISINE_TYPE',
+    GENERAL: 'GENERAL'
+
 })
+
+export const NUTRITIONAL_INFO = {
+    kcal: { type: Number },
+    carb: { type: Number },
+    sugar: { type: Number },
+    prot: { type: Number },
+    fat: { type: Number },
+    sat_fat: { type: Number },
+    fiber: { type: Number },
+    chol: { type: Number },
+    na: { type: Number }
+}
+
+export const instructionsTypes = ['intro', 'preparation', 'conservation', 'advice', 'generic']

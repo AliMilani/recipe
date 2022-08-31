@@ -1,3 +1,4 @@
+import mongoose from 'mongoose'
 import { UserType } from '../../utils/consts.utils.mjs'
 
 export const types = {
@@ -56,6 +57,37 @@ export const types = {
             required: 'توکن بازیابی الزامی است',
             stringLength: 'توکن بازیابی باید 16 کاراکتر باشد'
         }
+    },
+    objectID: {
+        type: 'objectID',
+        ObjectID: mongoose.Types.ObjectId,
+        messages: {
+            objectID: 'آیدی نادرست است',
+            type: 'آیدی باید از نوع رشته باشد.',
+            required: 'آیدی الزامی است'
+        }
+    },
+    image: {
+        type: 'url',
+        max: 2048,
+        min: 6,
+        custom: (v, errors) => {
+            if (!/\.(jpe?g|png|gif|bmp|webp)$/i.test(v)) {
+                errors.push({
+                    type: 'image',
+                    expected: 'jpg, jpeg, png, gif, bmp, webp',
+                    actual: v,
+                    message: 'فرمت تصویر نادرست است'
+                })
+            }
+            return v
+        },
+        messages: {
+            required: 'تصویر الزامی است',
+            stringMax: 'آدرس تصویر باید حداکثر 2048 کاراکتر باشد',
+            stringMin: 'آدرس تصویر باید حداقل 6 کاراکتر باشد',
+            url: 'آدرس اینترنتی تصویر نادرست است'
+        }
     }
 }
 
@@ -68,6 +100,7 @@ export const globalMessages = {
     length: '{field} باید {expected} کاراکتر باشد',
     pattern: '{field} نامعتبر است',
     string: '{field} باید یک رشته باشد',
+    stringEmpty: '{field} نمیتواند خالی باشد',
     stringMin: '{field} باید حداقل {expected} کاراکتر باشد',
     stringMax: '{field} باید حداکثر {expected} کاراکتر باشد',
     stringEnum: '{field} باید یک رشته و یکی از این موارد باشد: {expected}',
@@ -76,4 +109,6 @@ export const globalMessages = {
     emailMax: 'پست الکترونیکی باید حداکثر 254 کاراکتر باشد',
     emailEmpty: 'پست الکترونیکی نباید خالی باشد',
     stringLength: '{field} باید {expected} کاراکتر باشد',
+    objectID: "'{field}' باید یک ابجکت ایدی معتبر باشد",
+    url: '{field} باید یک آدرس اینترنتی معتبر باشد'
 }

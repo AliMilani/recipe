@@ -1,46 +1,46 @@
 {
-  "name": "node-express-ecmascript",
-  "version": "1.0.0",
-  "private": true,
-  "main": "index.js",
-  "engines": {
-    "node": ">=16.13.2",
-    "npm": ">=8.1.2"
-  },
-  "scripts": {
-    "dev": "nodemon src/server.mjs",
-    "start": "node src/server.mjs"
-  },
-  "author": "Ali Milani <59066012+AliMilani@users.noreply.github.com>",
-  "license": "MIT",
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cookie-parser": "^1.4.6",
-    "cors": "^2.8.5",
-    "debug": "^4.3.4",
-    "dotenv": "^16.0.1",
-    "ejs": "^3.1.8",
-    "envalid": "^7.3.1",
-    "express": "^4.18.1",
-    "express-async-errors": "^3.1.1",
-    "express-http-context": "^1.2.4",
-    "express-mongo-sanitize": "^2.2.0",
-    "express-rate-limit": "^6.4.0",
-    "fastest-validator": "^1.12.0",
-    "helmet": "^5.1.0",
-    "hpp": "^0.2.3",
-    "jsonwebtoken": "^8.5.1",
-    "lodash": "^4.17.21",
-    "mongoose": "^6.4.2",
-    "morgan": "^1.10.0",
-    "nanoid": "^4.0.0",
-    "nodemailer": "^6.7.7",
-    "winston": "^3.8.1",
-    "winston-daily-rotate-file": "^4.7.1",
-    "winston-mongodb": "^5.0.7",
-    "xss-clean": "^0.1.1"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.19"
-  }
+    "name": "node-express-ecmascript",
+    "version": "1.0.0",
+    "private": true,
+    "main": "index.js",
+    "engines": {
+        "node": ">=16.13.2",
+        "npm": ">=8.1.2"
+    },
+    "scripts": {
+        "dev": "nodemon src/server.mjs",
+        "start": "node src/server.mjs"
+    },
+    "author": "Ali Milani <59066012+AliMilani@users.noreply.github.com>",
+    "license": "MIT",
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "cookie-parser": "^1.4.6",
+        "cors": "^2.8.5",
+        "debug": "^4.3.4",
+        "dotenv": "^16.0.1",
+        "ejs": "^3.1.8",
+        "envalid": "^7.3.1",
+        "express": "^4.18.1",
+        "express-async-errors": "^3.1.1",
+        "express-http-context": "^1.2.4",
+        "express-mongo-sanitize": "^2.2.0",
+        "express-rate-limit": "^6.4.0",
+        "fastest-validator": "^1.12.0",
+        "helmet": "^5.1.0",
+        "hpp": "^0.2.3",
+        "jsonwebtoken": "^8.5.1",
+        "lodash": "^4.17.21",
+        "mongoose": "^6.4.6",
+        "morgan": "^1.10.0",
+        "nanoid": "^4.0.0",
+        "nodemailer": "^6.7.7",
+        "winston": "^3.8.1",
+        "winston-daily-rotate-file": "^4.7.1",
+        "winston-mongodb": "^5.0.7",
+        "xss-clean": "^0.1.1"
+    },
+    "devDependencies": {
+        "nodemon": "^2.0.19"
+    }
 }
