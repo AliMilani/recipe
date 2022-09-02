@@ -1,28 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * Module dependencies.
-*/
-import './utils/loadEnv.mjs' // should be first!
-import './utils/loadLogger.mjs' // should be before app module import
-import app from './app.mjs'
-import http from 'http'
-
+ * Application Loaders
+ */
+import './loaders/loadEnv.mjs'
+import './loaders/loadLogger.mjs'
+import './loaders/loadDB.mjs'
 
 /**
- *  database setup
+ * Module dependencies.
  */
-import mongoose from 'mongoose'
-
-mongoose
-    .connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then((conn) => {
-        console.log(`MongoDB Connected: ${conn.connection.host}`)
-    })
-    .catch((err) => {
-        console.info('mongoDb is not connected: ')
-        throw new Error(err.message)
-    })
+import app from './app.mjs'
+import http from 'http'
 
 /**
  * Get port from environment and store in Express.
@@ -79,5 +68,4 @@ function onListening() {
     const addr = server.address()
     const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port
     console.log('Listening on ' + bind)
-    // debug('Listening on ' + bind)
 }
