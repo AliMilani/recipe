@@ -1,5 +1,5 @@
 import Validator from 'fastest-validator'
-import { addToAllSchemaProps } from '../../utils/validator.utils.mjs'
+import { addToAllSchemaProps, addLabelToSchemaType } from '../../utils/validator.utils.mjs'
 import { types, globalMessages } from './consts.validator.mjs'
 
 const v = new Validator({
@@ -8,24 +8,11 @@ const v = new Validator({
 })
 
 const createChefSchema = {
-    name: {
-        type: 'string',
-        minlength: 3,
-        maxlength: 255
-    },
-    description: {
-        type: 'string',
-        minlength: 3,
-        maxlength: 3000,
-        optional: true
-    },
-    image: { ...types.image, optional: true },
-    userId: types.objectID,
-    slug: {
-        type: 'string',
-        minlength: 3,
-        maxlength: 255,
-    }
+    name: types.fullName,
+    description: types.description,
+    image: addLabelToSchemaType({ ...types.image, optional: true }, 'تصویر سرآشپز'),
+    userId: addLabelToSchemaType(types.objectID, 'شناسه کاربر'),
+    slug: types.slug
 }
 const updateChefSchema = {
     ...addToAllSchemaProps(createChefSchema, { optional: true })

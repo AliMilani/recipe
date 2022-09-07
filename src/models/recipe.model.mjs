@@ -3,26 +3,14 @@ const { Schema, model } = mongoose
 import subCategoryModel from './subCategory.model.mjs'
 import { RecipeDifficulty, NUTRITIONAL_INFO } from '../utils/consts.utils.mjs'
 import { ingredientsGroupSchema } from './ingredientsGroup.model.mjs'
+import { schemaTypes } from './consts.model.mjs'
 
 const recipeSchema = new Schema(
     {
-        name: {
-            type: String,
-            required: true,
-            minlength: 3,
-            maxlength: 64
-        },
-        description: {
-            type: String,
-            minlength: 3,
-            maxlength: 3000,
-            default: null
-        },
-        image: {
-            type: String,
-            maxlength: 2048,
-            default: null
-        },
+        name: schemaTypes.entityName,
+        description: schemaTypes.description,
+        image: schemaTypes.image,
+        slug: schemaTypes.slug,
         serving: {
             type: Number,
             min: 1,
@@ -59,8 +47,6 @@ const recipeSchema = new Schema(
             default: null
         },
         nutritionalInfo: {
-            // type: Object,
-            // required: true,
             '100g': NUTRITIONAL_INFO,
             serving: NUTRITIONAL_INFO
         },
@@ -152,7 +138,7 @@ recipeSchema.index(
         'instructions.text': 'text'
     },
     {
-        weights: { name: 5, description: 3, category: 1, subCategory: 1, 'instructions.text': 1 },
+        weights: { name: 5, description: 3, category: 1, subCategory: 1, 'instructions.text': 1 }
     }
 )
 

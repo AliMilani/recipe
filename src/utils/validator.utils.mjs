@@ -53,3 +53,5 @@ export const addToAllSchemaProps = (schema, props) =>
             }
         }
     })
+
+export const addLabelToSchemaType = (schema, label) => _.assign(schema, { label })

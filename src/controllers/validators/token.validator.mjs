@@ -7,7 +7,11 @@ const v = new Validator({
 })
 
 const refreshTokenSchema = {
-    refreshToken: types.refreshToken,
+    refreshToken: {
+        type: 'string',
+        length: 128,
+        label: 'رفرش توکن'
+    },
 }
 
 export const validateRefreshToken = v.compile(refreshTokenSchema)

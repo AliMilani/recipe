@@ -1,7 +1,8 @@
 import Validator from 'fastest-validator'
-import { globalMessages } from './consts.validator.mjs'
+import { globalMessages, types } from './consts.validator.mjs'
 import { RecipeTagType as tagType } from '../../utils/consts.utils.mjs'
-import { addToAllSchemaProps } from '../../utils/validator.utils.mjs'
+import { addToAllSchemaProps, addLabelToSchemaType } from '../../utils/validator.utils.mjs'
+import _ from 'lodash'
 
 const v = new Validator({
     useNewCustomCheckerFunction: true,
@@ -9,31 +10,16 @@ const v = new Validator({
 })
 
 const createTagSchema = {
-    name: {
-        type: 'string',
-        min: 2,
-        max: 50,
-        required: true,
-        messages: {
-            required: 'نام تگ الزامی است'
-        }
-    },
-    slug: {
-        type: 'string',
-        min: 2,
-        max: 50,
-        required: true,
-    },
+    name: addToAllSchemaProps(types.entityName, 'نام برچسب'),
+    slug: addToAllSchemaProps(types.slug, 'نامک برچسب'),
     tagType: {
+        label: 'نوع برچسب',
         type: 'string',
-        enum: Object.values(tagType),
-        // default: tagType.GENERAL,
+        enum: Object.values(tagType)
     }
 }
 
-const updateTagSchema = {
-    ...addToAllSchemaProps(createTagSchema, { optional: true })
-}
+const updateTagSchema = addToAllSchemaProps(createTagSchema, { optional: true })
 
 export const validateCreateTag = v.compile(createTagSchema)
 export const validateUpdateTag = v.compile(updateTagSchema)

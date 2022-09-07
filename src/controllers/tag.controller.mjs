@@ -2,6 +2,7 @@ import _ from 'lodash'
 import Controller from './controller.mjs'
 import tagService from '../services/tag.service.mjs'
 import { Code, RecipeTagType } from '../utils/consts.utils.mjs'
+import { grantSlug } from '../utils/slug.utils.mjs'
 
 class Tag extends Controller {
     constructor() {
@@ -11,20 +12,10 @@ class Tag extends Controller {
 
     create = async (req, res) => {
         const tag = req.body
-        tag.slug = _.toLower(tag.slug)
+        tag.slug = await grantSlug('tag', tag.slug)
         tag.tagType = tag.tagType || RecipeTagType.GENERAL
 
-        let createdTag
-        try {
-            createdTag = await tagService.create(tag)
-        } catch (error) {
-            if (error.code === 11000 && error.keyPattern.slug) {
-                return this.self.response(res, {
-                    code: Code.SLUG_ALREADY_EXIST
-                })
-            }
-            throw error
-        }
+        const createdTag = await tagService.create(tag)
 
         this.self.response(res, {
             data: createdTag,
@@ -58,25 +49,22 @@ class Tag extends Controller {
     update = async (req, res) => {
         const { id } = req.params
         const tag = req.body
-        tag.slug = _.toLower(tag.slug)
 
-        if (await tagService.findById(id) === null)
+        const oldTag = await tagService.findById(id)
+        if (oldTag === null)
             return this.self.response(res, {
                 code: Code.TAG_NOT_FOUND,
                 info: `the tag with id ${id} was found`
             })
-        let updatedTag
-        try {
-            updatedTag = await tagService.update(id, tag)
-        } catch (error) {
-            if (error.code === 11000 && error.keyPattern.slug) {
-                return this.self.response(res, {
-                    code: Code.SLUG_ALREADY_EXIST,
-                    info: `the tag with slug '${tag.slug}' already exist`
-                })
-            }
-            throw error
-        }
+        if (tag?.slug?.length >= 1)
+            tag.slug =
+                tag.slug === oldTag.slug
+                    ? oldTag.slug
+                    : await grantSlug('tag', tag.slug, { excludeId: id })
+        else tag.slug = oldTag.slug
+
+        const updatedTag = await tagService.update(id, tag)
+
         return this.self.response(res, {
             data: updatedTag,
             code: Code.OK

@@ -1,16 +1,11 @@
 import mongoose from 'mongoose'
+import { schemaTypes } from './consts.model.mjs'
 const { Schema, model } = mongoose
 
 const ingredientSchema = new Schema(
     {
-        name: {
-            type: String,
-            required: true
-        },
-        image: {
-            type: String,
-            default: '/images/ingredient.png'
-        }
+        name: schemaTypes.entityName,
+        image: schemaTypes.image
     },
     {
         timestamps: {}

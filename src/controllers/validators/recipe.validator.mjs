@@ -2,56 +2,80 @@ import Validator from 'fastest-validator'
 import _ from 'lodash'
 import { instructionsTypes, NUTRITIONAL_INFO, RecipeDifficulty } from '../../utils/consts.utils.mjs'
 import { types, globalMessages } from './consts.validator.mjs'
-import { addToAllSchemaProps } from '../../utils/validator.utils.mjs'
-// import fs from 'fs'
+import { addToAllSchemaProps, addLabelToSchemaType } from '../../utils/validator.utils.mjs'
 
 const v = new Validator({
     useNewCustomCheckerFunction: true,
-    messages: globalMessages,
+    messages: globalMessages
 })
 
-const _nutritionalInfoItemsProps = _.mapValues(NUTRITIONAL_INFO, (val) => ({
+const _nutritionalInfoItemsProps = _.mapValues(NUTRITIONAL_INFO, (value, key) => ({
     type: 'number',
     convert: true,
-    empty: false
+    empty: false,
+    label: `مقدار ${key}`
 }))
-
 const createRecipeSchema = {
-    name: { type: 'string', min: 3, max: 64 },
-    description: { type: 'string', min: 3, max: 64, optional: true },
-    image: { ...types.image, optional: true },
-    serving: { type: 'number', min: 1, optional: true, integer: true },
-    difficulty: { type: 'string', enum: Object.values(RecipeDifficulty) },
-    cookingTime: { type: 'number', min: 1, required: true, integer: true },
-    preparationTime: { type: 'number', min: 1, required: true, integer: true },
-    cost: { type: 'number', min: 1, required: true, integer: true },
-    rate: { type: 'number', optional: true, integer: true },
-    video: { type: 'array', items: { type: 'url' }, optional: true },
-    photocomments: { type: 'array', items: types.objectID, optional: true },
-    chef: { ...types.objectID, optional: true },
+    // $$async: true,
+    name: addLabelToSchemaType(types.entityName, 'نام دستور پخت'),
+    slug: { ...types.slug, label: 'نامک دستور پخت' },
+    description: _.assign(types.description, { optional: true }),
+    image: _.assign(types.image, { optional: true }),
+    serving: { type: 'number', min: 1, optional: true, integer: true, label: 'تعداد نفرات' },
+    difficulty: { type: 'string', enum: Object.values(RecipeDifficulty), label: 'سطح سختی' },
+    cookingTime: { type: 'number', min: 1, required: true, integer: true, label: 'زمان پخت' },
+    preparationTime: {
+        type: 'number',
+        min: 1,
+        required: true,
+        integer: true,
+        label: 'زمان آماده سازی'
+    },
+    cost: { type: 'number', min: 1, required: true, integer: true, label: 'هزینه' },
+    rate: { type: 'number', optional: true, integer: true, label: 'امتیاز' },
+    video: {
+        type: 'array',
+        items: {
+            type: 'url',
+            label: 'آدرس ویدیو'
+        },
+        optional: true,
+        label: 'ویدیو'
+    },
+    photocomments: {
+        type: 'array',
+        items: types.objectID,
+        optional: true,
+        label: 'نظرات تصویر دار'
+    },
+    chef: addLabelToSchemaType({ ...types.objectID, optional: true }, 'سرآشپز'),
     nutritionalInfo: {
         type: 'object',
+        label: 'اطلاعات غذایی',
+        // strict: true,
         props: {
             '100g': { type: 'object', props: _nutritionalInfoItemsProps, optional: true },
             serving: { type: 'object', props: _nutritionalInfoItemsProps, optional: true }
         }
     },
-    healthy: { type: 'boolean' },
-    servingUnit: { type: 'string' },
-    note: { type: 'string', optional: true },
+    healthy: { type: 'boolean', label: 'سالم' },
+    servingUnit: { type: 'string', label: 'واحد تعداد نفرات' },
+    note: { type: 'string', optional: true, label: 'یادداشت' },
     ingredients: {
         type: 'array',
+        label: 'مواد لازم',
         items: {
             type: 'object',
             props: {
-                groupLabel: { type: 'string', min: 3, max: 64 },
+                groupLabel: { type: 'string', min: 3, max: 64, label: 'عنوان بخش مواد لازم' },
                 ingredients: {
                     type: 'array',
                     items: {
                         type: 'object',
+                        label: 'ماده اولیه',
                         props: {
                             ingredientId: types.objectID,
-                            quantity: { type: 'string', optional: true }
+                            quantity: { type: 'string', optional: true, label: 'مقدار' }
                         }
                     }
                 }
@@ -60,18 +84,20 @@ const createRecipeSchema = {
     },
     instructions: {
         type: 'array',
+        label: 'دستورات پخت',
         items: {
             type: 'object',
             props: {
-                type: { type: 'string', enum: instructionsTypes },
-                title: { type: 'string', max: 225 },
-                text: { type: 'string' },
+                type: { type: 'string', enum: instructionsTypes, label: 'نوع بخش دستور پخت' },
+                title: { type: 'string', max: 225, label: 'عنوان بخش دستور پخت' },
+                text: { type: 'string', label: 'متن بخش دستور پخت' },
                 images: {
                     type: 'array',
                     items: {
                         type: 'object',
+                        label: 'تصویر بخش دستور پخت',
                         props: {
-                            kind: { type: 'string', enum: ['block'] },
+                            kind: { type: 'string', enum: ['block'], label: 'نوع تصویر' },
                             image: types.image
                         }
                     },
@@ -80,22 +106,15 @@ const createRecipeSchema = {
             }
         }
     },
-    category: types.objectID,
-    subCategory: types.objectID,
-    tags: {
-        type: 'array',
-        items: types.objectID
-    }
+    category: addLabelToSchemaType(types.objectID, 'دسته بندی'),
+    subCategory: addLabelToSchemaType(types.objectID, 'زیر دسته بندی'),
+    tags: addLabelToSchemaType({ type: 'array', items: types.objectID }, 'برچسب ها')
 }
 
 const updateRecipeSchema = {
-    // ...makeAllOptional(createRecipeSchema),
     ...addToAllSchemaProps(createRecipeSchema, { optional: true, strict: true }),
-    //strict
     $$strict: true
 }
 
-// fs.writeFileSync('test.json', JSON.stringify(updateRecipeSchema))
-// console.log(updateRecipeSchema);
 export const validateCreateRecipe = v.compile(createRecipeSchema)
 export const validateUpdateRecipe = v.compile(updateRecipeSchema)
