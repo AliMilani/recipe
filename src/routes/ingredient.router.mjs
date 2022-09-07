@@ -24,6 +24,7 @@ router.put(
     '/:id',
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
+    objectIdMiddleware,
     apiValidateMiddleware(validateUpdateIngredient),
     ingredient.update
 )
