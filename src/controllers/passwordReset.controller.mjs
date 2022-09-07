@@ -72,7 +72,7 @@ class ResetPassword extends Controller {
                     }
                 })
             } catch (err) {
-                throw new Error(`Error sending email : ${err}`)
+                throw err
             }
         }
 
@@ -101,7 +101,7 @@ class ResetPassword extends Controller {
             // console.info('email (confirm) sent')
         } catch (err) {
             await passwordResetService.deleteByTokenHash(createdPasswordReset.tokenHash)
-            throw new Error(`Error sending email : ${err}`)
+            throw err
         }
 
         /* To prevent attacks from detecting "user enumeration" with the response time,

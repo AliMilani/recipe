@@ -177,6 +177,11 @@ export const Code = {
         mes: 'ایمیل ارسال نشد',
         status: 500
     },
+    EMAIL_ERROR: {
+        msgCode: 50006,
+        mes: 'خطایی در ارسال ایمیل رخ داده است',
+        status: 500
+    },
     ERROR_MAKING_TRANSACTION: {
         msgCode: 50006,
         mes: 'تراکنش انجام نشد',

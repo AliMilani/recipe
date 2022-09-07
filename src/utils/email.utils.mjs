@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer'
 import ejs from 'ejs'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
+import { Code } from './consts.utils.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -58,9 +59,10 @@ class Email {
                     html: await this.#getAndRenderTemplate(options.templateFile, options.data)
                 }
                 await this.#createTransport().sendMail(mailOptions)
-                console.info('email sent')
+                // console.info('email sent')
                 resolve()
             } catch (e) {
+                e.httpResponseCode = Code.EMAIL_ERROR
                 reject(e)
             }
         })
