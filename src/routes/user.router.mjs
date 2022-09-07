@@ -1,4 +1,4 @@
-import express, { application } from 'express'
+import express from 'express'
 import user from '../controllers/user.controller.mjs'
 import authMiddleware from '../controllers/middlewares/auth.middleware.mjs'
 import objectIdMiddleware from '../controllers/middlewares/objectId.middleware.mjs'

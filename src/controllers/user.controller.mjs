@@ -1,7 +1,6 @@
 import _ from 'lodash'
 import Controller from './controller.mjs'
 import userService from '../services/user.service.mjs'
-import { validateCreateUser, validateUpdateUser } from './validators/user.validator.mjs'
 import { Code } from '../utils/consts.utils.mjs'
 import { passwordHash } from '../utils/encrypt.utils.mjs'
 
@@ -35,7 +34,7 @@ class User extends Controller {
         }
 
         const cleanedUserObj = {
-            ..._.pick(createdUser, ['email', 'role', 'createdAt', 'updatedAt']),
+            ..._.pick(createdUser, ['email', 'role']),
             id: createdUser._id
         }
 
@@ -62,7 +61,7 @@ class User extends Controller {
             })
         }
         const cleanedUserObj = {
-            ..._.pick(user, ['email', 'role', 'createdAt', 'updatedAt']),
+            ..._.pick(user, ['email', 'role']),
             id: user._id
         }
         this.self.response(res, {
@@ -114,7 +113,7 @@ class User extends Controller {
             })
         }
         const cleanedUserObj = {
-            ..._.pick(updatedUser, ['email', 'role', 'createdAt', 'updatedAt']),
+            ..._.pick(updatedUser, ['email', 'role']),
             id: updatedUser._id
         }
         return this.self.response(res, {
@@ -140,7 +139,7 @@ class User extends Controller {
         }
         const deletedUser = await userService.delete(id)
         const cleanedUserObj = {
-            ..._.pick(deletedUser, ['email', 'role', 'createdAt', 'updatedAt']),
+            ..._.pick(deletedUser, ['email', 'role']),
             id: deletedUser._id
         }
         return this.self.response(res, {
@@ -167,7 +166,7 @@ class User extends Controller {
             })
         }
         const cleanedUserObj = {
-            ..._.pick(user, ['email', 'role', 'createdAt', 'updatedAt']),
+            ..._.pick(user, ['email', 'role']),
             id: user._id
         }
         return this.self.response(res, {
