@@ -3,6 +3,7 @@ import Controller from './controller.mjs'
 import subCategoryService from '../services/subCategory.service.mjs'
 import { Code } from '../utils/consts.utils.mjs'
 import categoryService from '../services/category.service.mjs'
+import { grantSlug } from '../utils/slug.utils.mjs'
 
 class SubCategory extends Controller {
     constructor() {
@@ -18,8 +19,7 @@ class SubCategory extends Controller {
         const parentCategory = await categoryService.findById(subCategory.category)
         if (!parentCategory) {
             return this.self.response(res, {
-                code: Code.DATA_NOT_FOUND,
-                info: 'Parent category not found'
+                code: Code.PARENT_CATEGORY_NOT_FOUND,
             })
         }
         // the slug must be unique
@@ -98,15 +98,10 @@ class SubCategory extends Controller {
             return this.self.response(res, {
                 code: Code.CATEGORY_ALREADY_EXIST,
                 info: 'Sub category slug already exists'
-                // {
-                //     message: 'subCategory slug already exists',
-                //     subCategory: subCategoryWithSameSlug
-                // }
             })
         }
 
         const updatedSubCategory = await subCategoryService.update(id, subCategory)
-
 
         this.self.response(res, {
             data: updatedSubCategory,

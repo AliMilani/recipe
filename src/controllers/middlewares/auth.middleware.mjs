@@ -121,8 +121,8 @@ class Auth extends Controller {
                     })
                     if (updatedToken === null) {
                         return this.self.response(res, {
-                            code: Code.TOKEN_DOES_NOT_EXIST,
-                            info: { updatedToken }
+                            code: Code.UNAUTHORIZED,
+                            info: 'token does not exist in the database'
                         })
                     }
                     res.set('x-set-access-token', accessToken)
