@@ -20,6 +20,12 @@ export const Code = {
         mes: 'آیدی نامعتبر است',
         status: 400
     },
+    EMPTY_INPUT_BODY: {
+        msgCode: 40003,
+        mes: 'دیتای ورودی معتبر نیست',
+        devMes: 'Input body is empty',
+        status: 400
+    },
     UNAUTHORIZED: {
         msgCode: 40101,
         mes: 'عدم دسترسی',
