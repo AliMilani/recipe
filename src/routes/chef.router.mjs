@@ -1,43 +1,38 @@
 import express from 'express'
-import user from '../controllers/user.controller.mjs'
+import chef from '../controllers/chef.controller.mjs'
 import authMiddleware from '../controllers/middlewares/auth.middleware.mjs'
 import objectIdMiddleware from '../controllers/middlewares/objectId.middleware.mjs'
 import apiValidateMiddleware from '../controllers/middlewares/apiValidate.middleware.mjs'
-import {
-    validateCreateUser,
-    validateUpdateUser
-} from '../controllers/validators/user.validator.mjs'
+import { validateCreateChef, validateUpdateChef } from '../controllers/validators/chef.validator.mjs'
 
 const router = express.Router()
+
 router.post(
     '/',
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
-    apiValidateMiddleware(validateCreateUser),
-    user.create
+    apiValidateMiddleware(validateCreateChef),
+    chef.create
 )
-router.get(
-    '/id/:id',
-    objectIdMiddleware,
-    authMiddleware.isAuth,
-    authMiddleware.isAdmin,
-    user.findUserById
-)
+
+router.get('/', chef.findAll)
+
 router.put(
-    '/id/:id',
-    objectIdMiddleware,
+    '/:id',
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
-    apiValidateMiddleware(validateUpdateUser),
-    user.updateUserById
+    apiValidateMiddleware(validateUpdateChef),
+    chef.update
 )
+
+router.get('/:id', objectIdMiddleware, chef.findById)
+
 router.delete(
-    '/id/:id',
+    '/:id',
     objectIdMiddleware,
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
-    user.deleteUserById
+    chef.delete
 )
-router.get('/me', authMiddleware.isAuth, user.me)
 
 export default router

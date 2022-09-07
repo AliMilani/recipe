@@ -1,43 +1,43 @@
 import express from 'express'
-import user from '../controllers/user.controller.mjs'
+import recipe from '../controllers/recipe.controller.mjs'
 import authMiddleware from '../controllers/middlewares/auth.middleware.mjs'
 import objectIdMiddleware from '../controllers/middlewares/objectId.middleware.mjs'
 import apiValidateMiddleware from '../controllers/middlewares/apiValidate.middleware.mjs'
-import {
-    validateCreateUser,
-    validateUpdateUser
-} from '../controllers/validators/user.validator.mjs'
+import { validateCreateRecipe, validateUpdateRecipe } from '../controllers/validators/recipe.validator.mjs'
+// import recipeModel from '../models/recipe.model.mjs'
 
 const router = express.Router()
+
 router.post(
     '/',
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
-    apiValidateMiddleware(validateCreateUser),
-    user.create
+    apiValidateMiddleware(validateCreateRecipe),
+    recipe.create
 )
-router.get(
-    '/id/:id',
-    objectIdMiddleware,
-    authMiddleware.isAuth,
-    authMiddleware.isAdmin,
-    user.findUserById
-)
+
+router.get('/', recipe.get)
+
+router.get('/search', recipe.search)
+
+router.get('/:id', objectIdMiddleware, recipe.getById)
+
 router.put(
-    '/id/:id',
+    '/:id',
     objectIdMiddleware,
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
-    apiValidateMiddleware(validateUpdateUser),
-    user.updateUserById
+    apiValidateMiddleware(validateUpdateRecipe),
+    recipe.update
 )
+
 router.delete(
-    '/id/:id',
+    '/:id',
     objectIdMiddleware,
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
-    user.deleteUserById
+    recipe.delete
 )
-router.get('/me', authMiddleware.isAuth, user.me)
+
 
 export default router

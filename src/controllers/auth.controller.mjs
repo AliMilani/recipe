@@ -177,7 +177,11 @@ class Auth extends Controller {
             }
             if (decodedUser && tokenIsValid) {
                 const targetToken = await tokenService.findByAccessToken(
-                    token.generateTokenHash(receivedAccessToken)
+                    token.generateTokenHash(receivedAccessToken),
+                    {
+                        onlyActiveTokens: true,
+                        includePreviousToken: true
+                    }
                 )
                 if (targetToken) {
                     const deactivatedToken = await tokenService.updateById(targetToken._id, {
@@ -186,7 +190,8 @@ class Auth extends Controller {
                     if (deactivatedToken) {
                         return this.self.response(res, {
                             code: Code.OK,
-                            info: 'logout success (by access token)'
+                            info: 'logout success (by access token)',
+                            data: { deactivatedToken }
                         })
                     }
                 }
@@ -194,7 +199,10 @@ class Auth extends Controller {
         }
         if (receivedRefreshToken) {
             const targetToken = await tokenService.findByRefreshToken(
-                token.generateTokenHash(receivedRefreshToken)
+                token.generateTokenHash(receivedRefreshToken),
+                {
+                    onlyActiveTokens: true
+                }
             )
             if (targetToken) {
                 const deactivatedToken = await tokenService.updateById(targetToken._id, {
@@ -230,11 +238,14 @@ class Auth extends Controller {
         if (!targetToken) {
             return this.self.response(res, {
                 code: Code.TOKEN_DOES_NOT_EXIST,
-                info: {
-                    refreshToken,
-                    targetToken,
-                    message: 'maybe the token was rotated or user logged out'
-                }
+                info: 'maybe the token was rotated or user logged out'
+            })
+        }
+        // check if token is active
+        if (targetToken.isActive === false) {
+            return this.self.response(res, {
+                code: Code.REFRESH_TOKEN_EXPIRED,
+                info: 'token is not active'
             })
         }
 
@@ -244,7 +255,7 @@ class Auth extends Controller {
         if (!targetUser) {
             return this.self.response(res, {
                 code: Code.USER_NOT_FOUND,
-                info: { refreshToken, targetToken, user: targetUser }
+                info: { targetToken, user: targetUser }
             })
         }
 
@@ -310,6 +321,7 @@ class Auth extends Controller {
             rTokenHash,
             aTokenHash,
             rTotalRotations,
+            aTotalTimeExtensions: 0,
             aTokenLastIP: req.ip,
             userId: targetUser._id,
             aTokenCreatedAt: tokenCreatedAt,

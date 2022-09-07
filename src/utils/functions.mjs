@@ -9,8 +9,9 @@ export const response = (res, { data, info, errors, code } = props) => {
         response.devMessage = responseCode ? responseCode.devMes : Code.OK.devMes
         response.info = info
     }
-    response.data = data || {}
+    response.data = data
     response.errors = errors
+    response.msgCode = code?.msgCode
     return res
         .status(responseCode && responseCode.status ? responseCode.status : Code.OK.status)
         .json(response)

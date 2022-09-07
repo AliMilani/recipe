@@ -1,43 +1,41 @@
 import express from 'express'
-import user from '../controllers/user.controller.mjs'
+import subCategory from '../controllers/subCategory.controller.mjs'
 import authMiddleware from '../controllers/middlewares/auth.middleware.mjs'
 import objectIdMiddleware from '../controllers/middlewares/objectId.middleware.mjs'
 import apiValidateMiddleware from '../controllers/middlewares/apiValidate.middleware.mjs'
 import {
-    validateCreateUser,
-    validateUpdateUser
-} from '../controllers/validators/user.validator.mjs'
+    validateCreateSubCategory,
+    validateUpdateSubCategory
+} from '../controllers/validators/subCategory.validator.mjs'
 
 const router = express.Router()
+
 router.post(
     '/',
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
-    apiValidateMiddleware(validateCreateUser),
-    user.create
+    apiValidateMiddleware(validateCreateSubCategory),
+    subCategory.create
 )
-router.get(
-    '/id/:id',
-    objectIdMiddleware,
-    authMiddleware.isAuth,
-    authMiddleware.isAdmin,
-    user.findUserById
-)
+
+router.get('/', subCategory.findAll)
+
+router.get('/:id', objectIdMiddleware, subCategory.findById)
+
 router.put(
-    '/id/:id',
+    '/:id',
     objectIdMiddleware,
+    apiValidateMiddleware(validateUpdateSubCategory),
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
-    apiValidateMiddleware(validateUpdateUser),
-    user.updateUserById
+    subCategory.update
 )
 router.delete(
-    '/id/:id',
+    '/:id',
     objectIdMiddleware,
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
-    user.deleteUserById
+    subCategory.delete
 )
-router.get('/me', authMiddleware.isAuth, user.me)
 
 export default router

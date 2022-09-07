@@ -2,7 +2,6 @@ import httpContext from 'express-http-context'
 import express from 'express'
 import xss from 'xss-clean'
 import helmet from 'helmet'
-import rateLimit from 'express-rate-limit'
 import mongoSanitize from 'express-mongo-sanitize'
 import hpp from 'hpp'
 import morgan from 'morgan'
@@ -25,7 +24,7 @@ app.set('views', path.join(__dirname, '/views'))
 app.set('view engine', 'ejs')
 
 app.use(morgan('dev'))
-app.use(express.json({ limit: '10kb' }))
+app.use(express.json({ limit: '20kb' }))
 app.use((err, req, res, next) => {
     if (err.type === 'entity.parse.failed') {
         return response(res, { code: Code.JSON_SYNTAX_ERROR, info: { err } })
@@ -66,9 +65,5 @@ app.use(hpp())
 app.disable('x-powered-by')
 
 app.use(indexRouter)
-
-app.get('/api', (req, res) => {
-    res.send('API')
-})
 
 export default app
