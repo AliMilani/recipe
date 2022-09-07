@@ -2,6 +2,7 @@ import _ from 'lodash'
 import Controller from './controller.mjs'
 import categoryService from '../services/category.service.mjs'
 import { Code } from '../utils/consts.utils.mjs'
+import { grantSlug } from '../utils/slug.utils.mjs'
 
 class Category extends Controller {
     constructor() {
@@ -12,18 +13,9 @@ class Category extends Controller {
     create = async (req, res) => {
         const category = req.body
 
-        category.slug = _.toLower(category.slug)
-        let createdCategory
-        try {
-            createdCategory = await categoryService.create(category)
-        } catch (error) {
-            if (error.code === 11000 && error.keyPattern.slug) {
-                return this.self.response(res, {
-                    code: Code.CATEGORY_ALREADY_EXIST
-                })
-            }
-            throw error
-        }
+        category.slug = await grantSlug('category', category.slug)
+
+        const createdCategory = await categoryService.create(category)
 
         this.self.response(res, {
             data: createdCategory,
@@ -61,20 +53,19 @@ class Category extends Controller {
         const id = req.params.id
         const category = req.body
 
-        category.slug = _.toLower(category.slug)
+        const oldCategory = await categoryService.findById(id)
+        if (oldCategory === null)
+            return this.self.response(res, {
+                code: Code.CATEGORY_NOT_FOUND
+            })
+        if (category?.slug?.length >= 1)
+            category.slug =
+                category.slug === oldCategory.slug
+                    ? oldCategory.slug
+                    : await grantSlug('category', category.slug, { excludeId: id })
+        else category.slug = oldCategory.slug
 
-        let updatedCategory
-        try {
-            updatedCategory = await categoryService.update(id, category)
-        } catch (error) {
-            if (error.code === 11000 && error.keyPattern.slug) {
-                return this.self.response(res, {
-                    code: Code.SLUG_ALREADY_EXIST,
-                    info: { error }
-                })
-            }
-            throw error
-        }
+        const updatedCategory = await categoryService.update(id, category)
 
         if (updatedCategory === null) {
             return this.self.response(res, {

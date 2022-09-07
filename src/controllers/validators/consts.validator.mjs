@@ -1,25 +1,21 @@
 import mongoose from 'mongoose'
 import { UserType } from '../../utils/consts.utils.mjs'
+import { generateSlug } from '../../utils/slug.utils.mjs'
 
-export const types = {
+export const types = Object.freeze({
     email: {
         type: 'email',
         min: 6,
         max: 254,
-        messages: {
-            required: 'پست الکترونیکی الزامی است'
-        }
+        lowercase: true,
+        trim: true,
+        label: 'پست الکترونیکی'
     },
     password: {
         type: 'string',
         min: 8,
         max: 255,
-        messages: {
-            required: 'رمز عبور الزامی است',
-            stringMin: 'رمز عبور باید حداقل 8 کاراکتر باشد',
-            stringMax: 'رمز عبور باید حداکثر 255 کاراکتر باشد',
-            string: 'رمز عبور باید از نوع رشته باشد'
-        }
+        label: 'رمز عبور'
     },
     role: {
         type: 'string',
@@ -28,44 +24,15 @@ export const types = {
             stringEnum: 'نوع کاربر نادرست است'
         }
     },
-    refreshToken: {
-        type: 'string',
-        length: 128,
-        messages: {
-            required: 'توکن بازیابی ضروری است.',
-            stringLength: 'توکن بازیابی باید 128 کاراکتر باشد.',
-            type: 'توکن بازیابی باید از نوع رشته باشد.'
-        }
-    },
-    accessToken: {
-        type: 'string',
-        minLength: 200,
-        optional: true,
-        messages: {
-            minLength: 'توکن دسترسی باید حداقل 200 کاراکتر باشد.',
-            type: 'توکن دسترسی باید از نوع رشته باشد.'
-        },
-
-        $$async: true
-    },
     passwordResetToken: {
         type: 'string',
         length: 16,
-        messages: {
-            length: 'توکن بازیابی باید 16 کاراکتر باشد',
-            type: 'توکن بازیابی باید از نوع رشته باشد.',
-            required: 'توکن بازیابی الزامی است',
-            stringLength: 'توکن بازیابی باید 16 کاراکتر باشد'
-        }
+        label: 'توکن بازیابی رمز عبور'
     },
     objectID: {
         type: 'objectID',
         ObjectID: mongoose.Types.ObjectId,
-        messages: {
-            objectID: 'آیدی نادرست است',
-            type: 'آیدی باید از نوع رشته باشد.',
-            required: 'آیدی الزامی است'
-        }
+        label: 'شناسه'
     },
     image: {
         type: 'url',
@@ -82,14 +49,56 @@ export const types = {
             }
             return v
         },
-        messages: {
-            required: 'تصویر الزامی است',
-            stringMax: 'آدرس تصویر باید حداکثر 2048 کاراکتر باشد',
-            stringMin: 'آدرس تصویر باید حداقل 6 کاراکتر باشد',
-            url: 'آدرس اینترنتی تصویر نادرست است'
+        label: 'تصویر'
+    },
+    slug: {
+        type: 'string',
+        min: 1,
+        max: 255,
+        label: 'نامک',
+        lowercase: true,
+        trim: true,
+        nameProp: 'name',
+        custom: (v, errors, schema, name, parent, context) => {
+            if (v === undefined) return v
+            const slug = generateSlug(v)
+
+            if (slug.length < schema.min) {
+                if (context.data[schema.nameProp] !== undefined) {
+                    const nameSlug = generateSlug(
+                        context.data[schema.nameProp].slice(0, schema.max)
+                    )
+                    if (schema.min && nameSlug.length >= schema.min) return nameSlug
+                }
+                errors.push({
+                    type: name,
+                    actual: v,
+                    message: 'نامک باید شامل حروف و اعداد باشد'
+                })
+            }
+            return slug
         }
+    },
+    description: {
+        type: 'string',
+        label: 'توضیحات',
+        max: 3000,
+        trim: true
+    },
+    entityName: {
+        type: 'string',
+        min: 1,
+        max: 150,
+        trim: true
+    },
+    fullName: {
+        type: 'string',
+        min: 6,
+        max: 70,
+        trim: true,
+        label: 'نام و نام خانوادگی'
     }
-}
+})
 
 export const globalMessages = {
     objectStrict:
@@ -109,6 +118,10 @@ export const globalMessages = {
     emailMax: 'پست الکترونیکی باید حداکثر 254 کاراکتر باشد',
     emailEmpty: 'پست الکترونیکی نباید خالی باشد',
     stringLength: '{field} باید {expected} کاراکتر باشد',
-    objectID: "'{field}' باید یک ابجکت ایدی معتبر باشد",
-    url: '{field} باید یک آدرس اینترنتی معتبر باشد'
+    objectID: '{field} باید یک ابجکت ایدی معتبر باشد',
+    url: '{field} باید یک آدرس اینترنتی معتبر باشد',
+    number: '{field} باید یک عدد باشد',
+    numberNotEqual: '{field} نمی تواند برابر با {expected} باشد',
+    numberPositive: '{field} باید یک عدد مثبت باشد',
+    equalField: '{field} باید برابر با {expected} باشد'
 }

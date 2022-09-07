@@ -9,6 +9,7 @@ import chefService from '../services/chef.service.mjs'
 import ingredientService from '../services/ingredient.service.mjs'
 import { Code, RecipeDifficulty } from '../utils/consts.utils.mjs'
 import pagination from '../utils/paggination.utils.mjs'
+import { grantSlug, generateSlug } from '../utils/slug.utils.mjs'
 
 class Recipe extends Controller {
     constructor() {
@@ -76,8 +77,8 @@ class Recipe extends Controller {
             _.isEmpty(dbQuery.subCategory?.$in)
                 ? (dbQuery.subCategory = { $in: _.uniq(subCategoryIds) })
                 : (dbQuery.subCategory.$in = _.uniq(
-                    _.compact([...dbQuery.subCategory.$in, ...subCategoryIds])
-                ))
+                      _.compact([...dbQuery.subCategory.$in, ...subCategoryIds])
+                  ))
 
             if (_.isEmpty(dbQuery.subCategory?.$in)) delete dbQuery.subCategory
         }
@@ -229,25 +230,6 @@ class Recipe extends Controller {
         })
     }
 
-    #paths = (obj, parentKey) => {
-        var result
-        if (_.isArray(obj)) {
-            var idx = 0
-            result = _.flatMap(obj, function (obj) {
-                return this.#paths(obj, (parentKey || '') + '[' + idx++ + ']')
-            })
-        } else if (_.isPlainObject(obj)) {
-            result = _.flatMap(_.keys(obj), function (key) {
-                return _.map(this.#paths(obj[key], key), function (subkey) {
-                    return (parentKey ? parentKey + '.' : '') + subkey
-                })
-            })
-        } else {
-            result = []
-        }
-        return _.concat(result, parentKey || [])
-    }
-
     #checkRecipeObjectIds = async (recipe, res, { oldRecipe } = {}) => {
         let errors = []
         let category
@@ -326,20 +308,26 @@ class Recipe extends Controller {
         }
         if (recipe.ingredients) {
             const promises = recipe.ingredients.map((ingredientGroup, ingredientGroupIndex) =>
-                ingredientGroup.ingredients.map(async (ingredient, ingredientIndex) => new Promise(async (resolve, reject) => {
-                    try {
-                        if ((await ingredientService.findById(ingredient.ingredientId)) === null)
-                            errors.push({
-                                type: 'DB_ERROR',
-                                message: `the ingredient id ${ingredient.ingredientId} does not exist in the database`,
-                                field: `ingredients[${ingredientGroupIndex}].ingredients[${ingredientIndex}].ingredientId`,
-                                actual: ingredient.ingredientId
-                            })
-                    } catch (err) {
-                        reject(err)
-                    }
-                    resolve()
-                }))
+                ingredientGroup.ingredients.map(
+                    async (ingredient, ingredientIndex) =>
+                        new Promise(async (resolve, reject) => {
+                            try {
+                                if (
+                                    (await ingredientService.findById(ingredient.ingredientId)) ===
+                                    null
+                                )
+                                    errors.push({
+                                        type: 'DB_ERROR',
+                                        message: `the ingredient id ${ingredient.ingredientId} does not exist in the database`,
+                                        field: `ingredients[${ingredientGroupIndex}].ingredients[${ingredientIndex}].ingredientId`,
+                                        actual: ingredient.ingredientId
+                                    })
+                            } catch (err) {
+                                reject(err)
+                            }
+                            resolve()
+                        })
+                )
             )
             await Promise.all(promises.flat())
         }
@@ -355,10 +343,11 @@ class Recipe extends Controller {
 
     create = async (req, res) => {
         const recipe = req.body
-
+        recipe.slug = await grantSlug('recipe', recipe.slug)
+        // return this.self.response(res, { data: recipe })
         if (await this.#checkRecipeObjectIds(recipe, res)) return
 
-        let createdRecipe = await recipeService.create(recipe)
+        const createdRecipe = await recipeService.create(recipe)
 
         this.self.response(res, {
             data: createdRecipe,
@@ -411,6 +400,13 @@ class Recipe extends Controller {
             return this.self.response(res, {
                 code: Code.RECIPE_NOT_FOUND
             })
+        // console.warn((generateSlug(recipe.name) === oldRecipe.slug || recipe.slug === oldRecipe.slug));
+        if (recipe?.slug?.length >= 1)
+            recipe.slug =
+                recipe.slug === oldRecipe.slug
+                    ? oldRecipe.slug
+                    : await grantSlug('recipe', recipe.slug, { excludeId: id })
+        else recipe.slug = oldRecipe.slug
 
         if (await this.#checkRecipeObjectIds(recipe, res, { oldRecipe })) return
 
@@ -438,11 +434,11 @@ class Recipe extends Controller {
                 limit: query.limit,
                 aditionalQuery: searchQuery
                     ? {
-                        $text: {
-                            $search: searchQuery,
-                            $caseSensitive: false
-                        }
-                    }
+                          $text: {
+                              $search: searchQuery,
+                              $caseSensitive: false
+                          }
+                      }
                     : {},
                 aditionalPaginationOptions: {
                     select: {

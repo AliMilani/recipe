@@ -2,6 +2,7 @@ import _ from 'lodash'
 import Controller from './controller.mjs'
 import ingredientService from '../services/ingredient.service.mjs'
 import { Code } from '../utils/consts.utils.mjs'
+import { grantSlug } from '../utils/slug.utils.mjs'
 
 class Ingredient extends Controller {
     constructor() {
@@ -11,19 +12,10 @@ class Ingredient extends Controller {
 
     create = async (req, res) => {
         const ingredient = req.body
-        ingredient.slug = _.toLower(ingredient.slug)
 
-        // let createdIngredient
-        // try {
+        ingredient.slug = await grantSlug('ingredient', ingredient.slug)
+
         let createdIngredient = await ingredientService.create(ingredient)
-        // } catch (error) {
-        //     if (error.code === 11000 && error.keyPattern.slug) {
-        //         return this.self.response(res, {
-        //             code: Code.INGREDIENT_ALREADY_EXIST,
-        //         })
-        //     }
-        //     throw error
-        // }
 
         this.self.response(res, {
             data: createdIngredient,
@@ -50,12 +42,24 @@ class Ingredient extends Controller {
             data: ingredient,
             code: Code.OK
         })
-
     }
 
     update = async (req, res) => {
         const { id } = req.params
         const ingredient = req.body
+
+        const oldIngredient = await ingredientService.findById(id)
+        if (oldIngredient === null)
+            return this.self.response(res, {
+                code: Code.INGREDIENT_NOT_FOUND
+            })
+
+        if (ingredient?.slug?.length >= 1)
+            ingredient.slug =
+                ingredient.slug === oldIngredient.slug
+                    ? oldIngredient.slug
+                    : await grantSlug('ingredient', ingredient.slug, { excludeId: id })
+        else ingredient.slug = oldIngredient.slug
 
         const updatedIngredient = await ingredientService.update(id, ingredient)
         if (updatedIngredient === null)

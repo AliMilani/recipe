@@ -3,6 +3,7 @@ import Controller from './controller.mjs'
 import chefService from '../services/chef.service.mjs'
 import userService from '../services/user.service.mjs'
 import { Code } from '../utils/consts.utils.mjs'
+import { grantSlug } from '../utils/slug.utils.mjs'
 
 class Chef extends Controller {
     constructor() {
@@ -12,19 +13,9 @@ class Chef extends Controller {
 
     create = async (req, res) => {
         const chef = req.body
-        chef.slug = _.toLower(chef.slug)
+        chef.slug = await grantSlug('chef', chef.slug)
 
-        let createdChef
-        try {
-            createdChef = await chefService.create(chef)
-        } catch (error) {
-            if (error.code === 11000 && error.keyPattern.slug) {
-                return this.self.response(res, {
-                    code: Code.SLUG_ALREADY_EXIST
-                })
-            }
-            throw error
-        }
+        const createdChef = await chefService.create(chef)
 
         this.self.response(res, {
             data: createdChef,
@@ -58,10 +49,18 @@ class Chef extends Controller {
         const chef = req.body
         chef.slug = _.toLower(chef.slug)
 
-        if ((await chefService.findById(id)) === null)
+        const oldChef = await chefService.findById(id)
+        if (oldChef === null)
             return this.self.response(res, {
                 code: Code.CHEF_NOT_FOUND
             })
+
+        if (chef?.slug?.length >= 1)
+            chef.slug =
+                chef.slug === oldChef.slug
+                    ? oldChef.slug
+                    : await grantSlug('chef', chef.slug, { excludeId: id })
+        else chef.slug = oldChef.slug
 
         if (chef.userId && (await userService.findById(chef.userId)) === null)
             return this.self.response(res, {
@@ -69,23 +68,7 @@ class Chef extends Controller {
                 info: `the userId ${chef.userId} does not exist`
             })
 
-        // if (chef.slug && (await chefService.findBySlug(chef.slug)) !== null)
-        //     return this.self.response(res, {
-        //         code: Code.SLUG_ALREADY_EXIST,
-        //         info: `the slug '${chef.slug}' already used`
-        //     })
-
-        let updatedChef
-        try {
-            updatedChef = await chefService.update(id, chef)
-        } catch (error) {
-            if (error.code === 11000 && error.keyPattern.slug) {
-                return this.self.response(res, {
-                    code: Code.SLUG_ALREADY_EXIST
-                })
-            }
-            throw error
-        }
+        const updatedChef = await chefService.update(id, chef)
 
         this.self.response(res, {
             data: updatedChef,

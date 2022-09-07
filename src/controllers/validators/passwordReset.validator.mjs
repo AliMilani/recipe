@@ -9,15 +9,15 @@ const v = new Validator({
 const passwordResetSchema = {
     password: types.password,
     password_confirmation: {
-        type: "equal",
-        field: "password",
+        type: 'equal',
+        field: 'password',
         messages: {
-            equalField: "کلمه های عبور یکسان نمی باشند",
-            required: "تکرار رمز عبور الزامی است"
-        }
+            equalField: 'کلمه های عبور یکسان نمی باشند'
+        },
+        label: 'تکرار رمز عبور'
     },
     token: types.passwordResetToken,
-    $$async: true,
+    $$async: true
 }
 
 const passwordResetRequestSchema = {
@@ -27,10 +27,8 @@ const passwordResetRequestSchema = {
 }
 
 const verifyPasswordResetSchema = {
-    token: types.passwordResetToken,
+    token: types.passwordResetToken
 }
-
-
 
 export const validatePasswordResetRequest = v.compile(passwordResetRequestSchema)
 export const validatePasswordReset = v.compile(passwordResetSchema)

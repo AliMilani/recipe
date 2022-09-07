@@ -13,7 +13,7 @@ class SubCategory extends Controller {
 
     create = async (req, res) => {
         const subCategory = req.body
-        subCategory.slug = _.toLower(subCategory.slug)
+        subCategory.slug = await grantSlug('subCategory', subCategory.slug)
 
         // in this case, we need to check if the slug is already in use
         const parentCategory = await categoryService.findById(subCategory.category)
@@ -69,14 +69,20 @@ class SubCategory extends Controller {
     update = async (req, res) => {
         const id = req.params.id
         const subCategory = req.body
-        subCategory.slug = _.toLower(subCategory.slug)
-
+     
         const oldSubCategory = await subCategoryService.findById(id)
         if (oldSubCategory === null)
             return this.self.response(res, {
                 code: Code.SUB_CATEGORY_NOT_FOUND,
                 info: `subCategory with id '${id}' not found`
             })
+
+        if (subCategory?.slug?.length > 1)
+            subCategory.slug =
+                subCategory.slug === oldSubCategory.slug
+                    ? oldSubCategory.slug
+                    : await grantSlug('subCategory', subCategory.slug, { excludeId: id })
+        else subCategory.slug = oldSubCategory.slug
 
         let category
         if (subCategory.category) {
