@@ -12,6 +12,7 @@ export const response = (res, { data, info, errors, code } = props) => {
     response.data = data
     response.errors = errors
     response.msgCode = code?.msgCode
+    res.msgCode = code?.msgCode // to be used in request logger middleware
     return res
         .status(responseCode && responseCode.status ? responseCode.status : Code.OK.status)
         .json(response)
