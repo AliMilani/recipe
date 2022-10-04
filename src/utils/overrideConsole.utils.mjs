@@ -6,13 +6,16 @@
  */
 export default function (logger) {
     if (!logger) throw new Error('logger is required')
-    console.log = function () {
+    console.info = function () {
         return logger.info.apply(logger, arguments)
     }
     console.error = function () {
         return logger.error.apply(logger, arguments)
     }
-    console.info = function () {
+    console.warn = function () {
         return logger.warn.apply(logger, arguments)
+    }
+    console.debug = function () {
+        return logger.debug.apply(logger, arguments)
     }
 }

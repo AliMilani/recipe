@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import errorMiddleware from '../controllers/middlewares/error.middleware.mjs'
-import Controller from '../controllers/controller.mjs'
+import requestLoggerMiddleware from '../controllers/middlewares/requestLogger.middleware.mjs'
 import authRouter from './auth.router.mjs'
 import userRouter from './user.router.mjs'
 import passwordResetRouter from './passwordReset.router.mjs'
@@ -17,7 +17,7 @@ import { Code } from '../utils/consts.utils.mjs'
 const router = express.Router()
 
 router.use(cors())
-router.use(new Controller().log)
+router.use(requestLoggerMiddleware)
 
 router.use('/auth', authRouter)
 router.use('/users', userRouter)

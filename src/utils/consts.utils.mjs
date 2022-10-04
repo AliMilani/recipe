@@ -176,6 +176,11 @@ export const Code = {
         devMes: 'refresh token is not set',
         status: 422
     },
+    RECAPTCHA_VERIFICATION_FAILED: {
+        msgCode: 42203,
+        mes: 'کپچا معتبر نیست',
+        status: 422
+    },
     TOO_MANY_REQUEST: {
         msgCode: 42902,
         mes: 'You sent too many requests. Please wait a while then try again',
