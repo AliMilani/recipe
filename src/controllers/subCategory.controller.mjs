@@ -14,7 +14,7 @@ class SubCategory extends Controller {
     create = async (req, res) => {
         const subCategory = req.body
         subCategory.slug = await grantSlug('subCategory', subCategory.slug)
-
+        // TODO: check the category exists or not (DB_ERROR)
         // in this case, we need to check if the slug is already in use
         const parentCategory = await categoryService.findById(subCategory.category)
         if (!parentCategory) {

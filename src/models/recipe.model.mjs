@@ -37,9 +37,11 @@ const recipeSchema = new Schema(
             required: true
         },
         rate: {
-            type: Number
+            type: Number,
+            min: 1,
+            max: 5,
         },
-        video: [mongoose.Schema.Types.ObjectId],
+        video: [String],
         photocomments: [mongoose.Schema.Types.ObjectId],
         chef: {
             type: mongoose.Schema.Types.ObjectId,

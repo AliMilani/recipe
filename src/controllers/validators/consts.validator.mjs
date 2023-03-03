@@ -35,11 +35,12 @@ export const types = Object.freeze({
         label: 'شناسه'
     },
     image: {
+        // TODO: if it required, it should return required error, not image error (ingredient in post)
         type: 'url',
         max: 2048,
         min: 6,
         custom: (v, errors) => {
-            if (!/\.(jpe?g|png|gif|bmp|webp)$/i.test(v)) {
+            if (!/.*\/.*\.(jpe?g|png|gif|bmp|webp)$/i.test(v)) {
                 errors.push({
                     type: 'image',
                     expected: 'jpg, jpeg, png, gif, bmp, webp',
@@ -124,4 +125,5 @@ export const globalMessages = {
     numberNotEqual: '{field} نمی تواند برابر با {expected} باشد',
     numberPositive: '{field} باید یک عدد مثبت باشد',
     equalField: '{field} باید برابر با {expected} باشد'
+    // TODO: add more messages
 }

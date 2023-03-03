@@ -13,7 +13,7 @@ class Tag extends Controller {
     create = async (req, res) => {
         const tag = req.body
         tag.slug = await grantSlug('tag', tag.slug)
-        tag.tagType = tag.tagType || RecipeTagType.GENERAL
+        tag.tagType = tag.tagType || RecipeTagType.GENERAL // TODO: remove this line because it's not necessary(required in validator)
 
         const createdTag = await tagService.create(tag)
 

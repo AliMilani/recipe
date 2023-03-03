@@ -15,6 +15,7 @@ class Chef extends Controller {
         const chef = req.body
         chef.slug = await grantSlug('chef', chef.slug)
 
+        // FIXME: check userId is exist in user collection
         const createdChef = await chefService.create(chef)
 
         this.self.response(res, {
@@ -64,7 +65,7 @@ class Chef extends Controller {
 
         if (chef.userId && (await userService.findById(chef.userId)) === null)
             return this.self.response(res, {
-                code: Code.USER_NOT_FOUND,
+                code: Code.USER_NOT_FOUND, // FIXME: change to USER_ID_NOT_FOUND (with status 409)
                 info: `the userId ${chef.userId} does not exist`
             })
 

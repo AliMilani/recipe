@@ -32,11 +32,11 @@ const createRecipeSchema = {
         label: 'زمان آماده سازی'
     },
     cost: { type: 'number', min: 1, required: true, integer: true, label: 'هزینه' },
-    rate: { type: 'number', optional: true, integer: true, label: 'امتیاز' },
+    rate: { type: 'number', min: 1, max: 5, optional: true, integer: true, label: 'امتیاز' },
     video: {
         type: 'array',
         items: {
-            type: 'url',
+            type: 'url', // TODO: video format validation
             label: 'آدرس ویدیو'
         },
         optional: true,
@@ -90,7 +90,7 @@ const createRecipeSchema = {
             props: {
                 type: { type: 'string', enum: instructionsTypes, label: 'نوع بخش دستور پخت' },
                 title: { type: 'string', max: 225, label: 'عنوان بخش دستور پخت' },
-                text: { type: 'string', label: 'متن بخش دستور پخت' },
+                text: { type: 'string', label: 'متن بخش دستور پخت' }, // TODO: max length
                 images: {
                     type: 'array',
                     items: {
@@ -109,6 +109,7 @@ const createRecipeSchema = {
     category: addLabelToSchemaType(types.objectID, 'دسته بندی'),
     subCategory: addLabelToSchemaType(types.objectID, 'زیر دسته بندی'),
     tags: addLabelToSchemaType({ type: 'array', items: types.objectID }, 'برچسب ها')
+    //TODO: add published field or post status [draft, published]
 }
 
 const updateRecipeSchema = {

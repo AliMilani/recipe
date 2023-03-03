@@ -70,6 +70,7 @@ class User extends Controller {
         })
     }
 
+    // TODO: rename to update
     updateUserById = async (req, res) => {
         const id = req.params.id
         const user = req.body
@@ -134,19 +135,16 @@ class User extends Controller {
         if (user === null) {
             return this.self.response(res, {
                 code: Code.USER_NOT_FOUND,
-                info: { id: id, user: user }
             })
         }
         const deletedUser = await userService.delete(id)
-        const cleanedUserObj = {
-            ..._.pick(deletedUser, ['email', 'role']),
-            id: deletedUser._id
-        }
+        // TODO: rename _id to id in all of the project
+        
         return this.self.response(res, {
-            data: cleanedUserObj,
+            // data: cleanedUserObj,
+            // TODO: remove all unnecessary info properties
             info: {
-                user: user,
-                deletedUser: deletedUser
+                user: user
             }
         })
     }

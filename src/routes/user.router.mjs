@@ -9,6 +9,7 @@ import {
 } from '../controllers/validators/user.validator.mjs'
 
 const router = express.Router()
+// TODO: add get all users with pagination
 router.post(
     '/',
     authMiddleware.isAuth,
@@ -16,15 +17,16 @@ router.post(
     apiValidateMiddleware(validateCreateUser),
     user.create
 )
+// TODO: remove id path
 router.get(
-    '/id/:id',
+    '/:id',
     objectIdMiddleware,
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
     user.findUserById
 )
 router.put(
-    '/id/:id',
+    '/:id',
     objectIdMiddleware,
     authMiddleware.isAuth,
     authMiddleware.isAdmin,
@@ -32,7 +34,7 @@ router.put(
     user.updateUserById
 )
 router.delete(
-    '/id/:id',
+    '/:id',
     objectIdMiddleware,
     authMiddleware.isAuth,
     authMiddleware.isAdmin,

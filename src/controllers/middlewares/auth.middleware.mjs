@@ -10,7 +10,9 @@ const {
     ACCESS_TOKEN_TIME_EXTENSION_IS_ENABLED,
     ACCESS_TOKEN_EXTENSION_TIME_PERCENTAGE,
     ACCESS_TOKEN_TOTAL_ALLOWED_TIME_EXTENSIONS,
-    ACCESS_TOKEN_STRICT_IP_CHECKING
+    ACCESS_TOKEN_STRICT_IP_CHECKING,
+    IGNORE_AUTHENTICATION,
+    IGNORE_AUTHORIZATION
 } = process.env
 
 class Auth extends Controller {
@@ -20,7 +22,10 @@ class Auth extends Controller {
     }
 
     isAuth = async (req, res, next) => {
+        if (IGNORE_AUTHENTICATION === 'true') return next()
+
         const receivedAccessToken = req.headers['x-access-token']
+        // console.debug(receivedAccessToken)
         if (!receivedAccessToken) {
             return this.self.response(res, { code: Code.ACCESS_TOKEN_NOT_SET })
         }
@@ -55,10 +60,11 @@ class Auth extends Controller {
             if (timePassedInPercentage > parseInt(ACCESS_TOKEN_EXTENSION_TIME_PERCENTAGE)) {
                 // check if the user has already extended the time of the access token
                 const targetToken = await tokenService.findByAccessToken(
-                    generateTokenHash(receivedAccessToken), {
-                    includePreviousToken: true,
-                    onlyActiveTokens: true
-                }
+                    generateTokenHash(receivedAccessToken),
+                    {
+                        includePreviousToken: true,
+                        onlyActiveTokens: true
+                    }
                 )
                 if (targetToken === null) {
                     return this.self.response(res, {
@@ -88,9 +94,7 @@ class Auth extends Controller {
                     return next()
                 }
                 // access token create time does not equal to provided token
-                if (
-                    decodedUser.tokenCreatedAt !== targetToken.aTokenCreatedAt
-                ) {
+                if (decodedUser.tokenCreatedAt !== targetToken.aTokenCreatedAt) {
                     return this.self.response(res, {
                         code: Code.ACCESS_TOKEN_EXPIRED,
                         info: 'access token create time does not equal to provided token (create time)'
@@ -148,6 +152,7 @@ class Auth extends Controller {
     }
 
     isUser = async (req, res, next) => {
+        if (IGNORE_AUTHORIZATION === 'true' && process.env.NODE_ENV === 'dev') return next()
         const user = req.user
         if (!user) {
             return this.self.response(res, { code: Code.USER_NOT_FOUND })
@@ -162,6 +167,8 @@ class Auth extends Controller {
     }
 
     isAdmin = async (req, res, next) => {
+        if (IGNORE_AUTHORIZATION === 'true' && process.env.NODE_ENV === 'dev') return next()
+
         const user = req.user
         if (!user) {
             return this.self.response(res, {

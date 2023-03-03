@@ -60,6 +60,7 @@ class User {
      */
     update = async (id, userObj) => await userModel.findOneAndUpdate({ _id: id }, userObj, { new: true })
 
+    // TODO: all jsdoc to all service functions in all services
     /**
      * - this function is used to find a user by id and delete it
      * @param {String} id user id

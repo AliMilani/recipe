@@ -25,9 +25,9 @@ router.use('/password', passwordResetRouter)
 router.use('/recipes', recipeRouter)
 router.use('/categories', categoryRouter)
 router.use('/sub-categories', subCategoryRouter)
-router.use('/tag', tagRouter)
-router.use('/ingredient', ingredientRouter)
-router.use('/chef', chefRouter)
+router.use('/tag', tagRouter) // TODO: change to tags
+router.use('/ingredient', ingredientRouter) // TODO: change to ingredients
+router.use('/chef', chefRouter) // TODO: change to chefs
 
 
 /* GET home page. */

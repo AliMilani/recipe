@@ -64,6 +64,8 @@ function validateEnv() {
         MAIL_PASSWORD: str({ desc: 'The password used to connect to the mail server' }),
         MAIL_PORT: port({ desc: 'The port used to connect to the mail server', example: '587' }),
         MAIL_HOST: str({ desc: 'The host used to connect to the mail server', example: 'smtp.example.com' }),
+        // FIXME: Add IGNORE_AUTHORIZATION and IGNORE_AUTHENTICATION and RECAPTCHA_IS_ENABLED
+        // TODO: Add ignore authorization and ignore authentication to docs
 
     })
 

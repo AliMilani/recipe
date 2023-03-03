@@ -1,0 +1,759 @@
+openapi: 3.0.3
+info:
+    title: Recipe API - OpenAPI 3.0
+    description: |-
+        This documentation includes **endpoints**, how to authenticate, and all the information you need to know about the API
+
+         # Overview
+
+         1.  The API has an access <a href="#rate-limits">rate limit</a> applied to it
+         2.  Response to every request is sent in [JSON format](https://en.wikipedia.org/wiki/JSON). In case the API request results in an error, it is represented by an `"errors": {}` key in the JSON response.
+         3.  The request method (verb) determines the nature of action you intend to perform. A request made using the GET method implies that you want to fetch something from application, and POST implies you want to save something new to application.
+         4.  **Info**, **message** and **devMessage** properties in JSON response are only available in _development mode._
+         5.  The API calls will respond with appropriate [HTTP status codes](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) for all requests. Within Client, when a response is received, the status code is highlighted and is accompanied by a help text that indicates the possible meaning of the response code. A `200 OK` indicates all went well, while `4XX` or `5XX` response codes indicate an error from the requesting client or our API servers respectively.
+             
+
+         \*   **Access tokens** may be extended. If this option is enabled, you will receive the **x-set-access-token** header in the response, which you **must replace with the previous access token**.
+         \*   To prevent user enumeration attacks, we have rate limiting, after reaching our limit, we will receive status code 429  
+             The rate limiting conditions are as follows:
+             \*   500 requests in 15 minutes for all endpoints
+             \*   rate limiting in endpoints ([auth](#auth) and [password](#password))
+         \*   If the JSON request is in an incorrect format, you will get a JSON_SYNTAX_ERROR error
+         \*   The slug can only contain English, Persian and Arabic numbers and letters (Persian and Arabic numbers are converted to English), it is better to perform sanitization before sending the slug.
+         \*   the server automatically removes the invalid characters, If the slug does not contain any valid characters, if the name property exists, the server will choose it as a slug.
+         \*   If the slug is duplicated, the server automatically adds a unique number to the end with a hyphen.
+             
+
+         # Authentication
+
+         If needed to add, change or delete resources according to User Role, the access token is required to be sent as part of every request to the API, in the form of an x-access-token request header.
+
+         > **Access tokens** may be extended ([access token extension](#access-token-extension)). If this option is enabled, you will receive the `x-set-access-token` header in the response, which you **must replace with the previous access token**.
+
+         ## Access token related error response
+
+         ### Error when access token is not set:
+
+         If an access token is missing, you will receive a `401 Unauthorised` response code and the following JSON response:
+
+         ``` json
+         {
+             "message": "عدم احراز هویت",
+             "devMessage": "access token is not set",
+             "data": {},
+             "msgCode": 40105
+         }
+
+         ```
+
+         ### Error when access token is malformed, or invalid:
+
+         If an access token is malformed, or invalid, you will receive a `401 Unauthorised` response code and the following JSON response:
+
+         ``` json
+         {
+             "message": "عدم احراز هویت",
+             "devMessage": "access token is invalid",
+             "data": {},
+             "msgCode": 40107
+         }
+
+         ```
+
+         ## Ways to get a new access token
+
+         In general, access-token and [refresh-token](#refresh-token) are created in three ways, **login**, **sign-up** or using **refresh token**.  
+         If the option to limit the number of active sessions is enabled(_In the application configuration_), if the user reaches the limit, the oldest session will expire!
+
+         ## Tokens behavior
+
+         Tokens can show different behavior based on the application configuration.
+
+         ### access token extension
+
+         If this option is enabled, token will be sent to you based on the expiration time and _extension percentage_ set in the (_application configuration_) in the request header where the access token is provided `x-set-access-token` .  
+         It should be noted that the previous token will remain active until the expiration date unless the user has logged out and invalidated the token.  
+         It is possible that there is a limit on the number of extensions that can no longer be extended after reaching the set limit.
+
+         ### refresh token rotation
+
+         When you request a new refresh token, the previous token will expire and new tokens will be sent to you.  
+         It is possible that there is a limit on the number of rotate (_In the application configuration_) that can no longer be rotated after reaching the set limit.
+
+         # Rate Limits
+
+         API access rate limits are applied at a per-key basis in unit time. Access to the API using a key is limited to **500 requests per 15 minute**. In addition, every API response is accompanied by the following set of headers to identify the status of your consumption.
+
+         | Header | Description |
+         | --- | --- |
+         | `X-RateLimit-Limit` | The maximum number of requests that the consumer is permitted to make per specified time. |
+         | `X-RateLimit-Remaining` | The number of requests remaining in the current rate limit window. |
+         | `X-RateLimit-Reset` | The time at which the current rate limit window resets in UTC epoch seconds. |
+
+         ## Rate Limit will be different in the following endpoints:
+
+         | Endpoint | **Limit** |
+         | --- | --- |
+         | `/\*` | **500 requests** per **15 minute** by `IP` |
+         | `/auth/signup` | **20 requests** per **15 minute** by `IP`  <br>**100 requests** per **5 hours** by `IP` |
+         | `/auth/signin` | **20 requests** per **15 minute** by `IP`  <br>**100 requests** per **2 hours** by `IP` |
+         | `/password/request` | **5 requests** per **10 minute** by `body.email`  <br>**100 requests** per **5 hours** by `IP` |
+         | `/password/verify` | **1 requests** per **2 hours** by `body.token`  <br>**100 requests** per **2 hours** by `IP` |
+         | `/password/reset` | **150 requests** per **2 hours** by `IP` |
+
+         Once you hit the rate limit, you will receive a response similar to the following JSON, with a status code of `429 Too Many Requests`.
+
+         ``` json
+         {
+             "message": "You sent too many requests. Please wait a while then try again",
+             "info": "rate limit exceeded (500 requests per 15 minutes)",
+             "data": {},
+             "msgCode": 42902
+         }
+
+         ```
+
+    # API Reference
+    version: 1.0.0
+externalDocs:
+    description: Find out more about Swagger
+    url: http://swagger.io
+servers:
+    - url: http://localhost:5000
+tags:
+    - name: auth
+      description: Authentication operations
+    - name: user
+      description: Operations about user
+    #   externalDocs:
+    #       description: postman
+    #       url: http://postnam....
+    - name: password
+      description: password reset operations
+    - name: recipe
+      description: recipe operations
+paths:
+    /recipes:
+        get:
+            tags:
+                - 'recipe'
+            summary: 'Get all recipes'
+            description: 'Returns all recipes from the system that the user has access to.'
+            operationId: 'getRecipes'
+            parameters:
+                - in: query
+                  name: page
+                  description: 'page number'
+                  required: false
+                  schema:
+                      type: number
+                      minimum: 1
+                - in: query
+                  name: limit
+                  description: 'number of items per page'
+                  required: false
+                  schema:
+                      type: number
+                      minimum: 1
+                      maximum: 100
+                - in: query
+                  name: category
+                  description: 'category id or slug'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          slug:
+                              type: string
+                          id:
+                              type: string
+                              format: objectID
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: sub_category
+                  description: 'sub category id or slug'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          slug:
+                              type: string
+                          id:
+                              type: string
+                              format: objectID
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: tag
+                  description: 'tag id or slug'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          slug:
+                              type: string
+                          id:
+                              type: string
+                              format: objectID
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: difficulty
+                  description: 'difficulty of recipe'
+                  required: false
+                  schema:
+                      type: string
+                      enum:
+                          - VERY_EASY
+                          - EASY
+                          - MEDIUM
+                          - HARD
+                          - VERY_HARD
+                - in: query
+                  name: healthy
+                  description: 'the healthiness of the recipe'
+                  required: false
+                  schema:
+                      type: boolean
+                - in: query
+                  name: rate
+                  description: 'rate of recipe'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          gt:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          gte:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          eq:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          ne:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          lt:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          lte:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: preparation_time
+                  description: 'preparation time in minutes'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          gt:
+                              type: number
+                              minimum: 1
+                          gte:
+                              type: number
+                              minimum: 1
+                          eq:
+                              type: number
+                              minimum: 1
+                          ne:
+                              type: number
+                              minimum: 1
+                          lt:
+                              type: number
+                              minimum: 1
+                          lte:
+                              type: number
+                              minimum: 1
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: cooking_time
+                  description: 'cooking time in minutes'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          gt:
+                              type: number
+                              minimum: 1
+                          gte:
+                              type: number
+                              minimum: 1
+                          eq:
+                              type: number
+                              minimum: 1
+                          ne:
+                              type: number
+                              minimum: 1
+                          lt:
+                              type: number
+                              minimum: 1
+                          lte:
+                              type: number
+                              minimum: 1
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: ingredient
+                  description: 'ingredient id'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          id:
+                              type: string
+                              format: objectID
+                  explode: true
+                  style: deepObject
+
+            responses:
+                '200':
+                    description: 'successful operation'
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    data:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Recipe'
+                                    pagination:
+                                        $ref: '#/components/schemas/Recipe'
+    /recipes/{recipeId}:
+        get:
+            tags:
+                - 'recipe'
+            summary: 'Get recipe by id'
+            description: 'Returns a single recipe'
+            operationId: 'getRecipeById'
+            parameters:
+                - in: path
+                  name: recipeId
+                  description: 'recipe id'
+                  required: true
+                  schema:
+                      type: string
+                      format: objectID
+            responses:
+                '200':
+                    description: 'successful operation'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Recipe'
+                '400':
+                    description: 'Invalid ID supplied'
+                '404':
+                    description: 'Recipe not found'
+        put:
+            tags:
+                - 'recipe'
+            summary: 'Update recipe'
+            description: 'Update recipe'
+            operationId: 'updateRecipe'
+            security:
+                - accessToken: []
+            parameters:
+                - in: path
+                  name: recipeId
+                  description: 'recipe id'
+                  required: true
+                  schema:
+                      type: string
+                      format: objectID
+            requestBody:
+                description: 'Updated recipe object'
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Recipe'
+            responses:
+                '200':
+                    description: 'successful operation'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Recipe'
+                '400':
+                    description: 'Invalid ID supplied'
+                '404':
+                    description: 'Recipe not found'
+        delete:
+            tags:
+                - 'recipe'
+            summary: 'Delete recipe'
+            description: 'Delete recipe'
+            operationId: 'deleteRecipe'
+            security:
+                - accessToken: []
+            parameters:
+                - in: path
+                  name: recipeId
+                  description: 'recipe id'
+                  required: true
+                  schema:
+                      type: string
+                      format: objectID
+            responses:
+                '200':
+                    description: 'successful operation'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Recipe'
+                '400':
+                    description: 'Invalid ID supplied'
+                '404':
+                    description: 'Recipe not found'
+    /auth/signin:
+        post:
+            tags:
+                - 'auth'
+            summary: 'Sign in'
+            description: 'Sign in'
+            operationId: 'signin'
+            requestBody:
+                description: 'Sign in'
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                email:
+                                    type: string
+                                    format: email
+                                password:
+                                    type: string
+            responses:
+                '200':
+                    description: 'successful operation'
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    accessToken:
+                                        type: string
+                '400':
+                    description: 'Invalid email or password'
+components:
+    schemas:
+        Recipe:
+            required:
+                - name
+                - slug
+                - image
+                - difficulty
+                - cookingTime
+                - preparationTime
+                - cost
+                - nutritionalInfo
+                - healthy
+                - servingUnit
+                - ingredients
+                - instructions
+                - category
+                - subCategory
+                - tags
+            type: object
+            properties:
+                name:
+                    type: string
+                    minLength: 1
+                    maxLength: 150
+                    example: pasta alfredo
+                slug:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                    example: pasta alfredo
+                image:
+                    type: string
+                    minLength: 6
+                    maxLength: 2048
+                    pattern: /^https?:\/\/\S+.*\/.*\.(jpe?g|png|gif|bmp|webp)$/
+                    format: url
+                    example: https://www.example.com/image.jpg
+                serving:
+                    type: number
+                    minimum: 1
+                difficulty:
+                    type: string
+                    enum:
+                        - VERY_EASY
+                        - EASY
+                        - MEDIUM
+                        - HARD
+                        - VERY_HARD
+                cookingTime:
+                    type: number
+                    minimum: 1
+                preparationTime:
+                    type: number
+                    minimum: 1
+                cost:
+                    type: number
+                    minimum: 1
+                rate:
+                    type: number
+                    minimum: 1
+                    maximum: 5
+                video:
+                    type: array
+                    items:
+                        type: string
+                        minLength: 6
+                        maxLength: 2048
+                        pattern: /^https?:\/\/\S+/
+                        format: url
+                        example: https://www.example.com/video.mp4
+                photocomments:
+                    type: array
+                    items:
+                        type: string
+                        format: objectID
+                chef:
+                    type: string
+                    format: objectID
+                nutritionalInfo:
+                    type: object
+                    properties:
+                        100g:
+                            type: object
+                            properties:
+                                kcal:
+                                    type: number
+                                    minimum: 1
+                                carb:
+                                    type: number
+                                    minimum: 1
+                                sugar:
+                                    type: number
+                                    minimum: 1
+                                prot:
+                                    type: number
+                                    minimum: 1
+                                fat:
+                                    type: number
+                                    minimum: 1
+                                sat_fat:
+                                    type: number
+                                    minimum: 1
+                                fiber:
+                                    type: number
+                                    minimum: 1
+                                chol:
+                                    type: number
+                                    minimum: 1
+                                na:
+                                    type: number
+                                    minimum: 1
+                        serving:
+                            type: object
+                            properties:
+                                kcal:
+                                    type: number
+                                    minimum: 1
+                                carb:
+                                    type: number
+                                    minimum: 1
+                                sugar:
+                                    type: number
+                                    minimum: 1
+                                prot:
+                                    type: number
+                                    minimum: 1
+                                fat:
+                                    type: number
+                                    minimum: 1
+                                sat_fat:
+                                    type: number
+                                    minimum: 1
+                                fiber:
+                                    type: number
+                                    minimum: 1
+                                chol:
+                                    type: number
+                                    minimum: 1
+                                na:
+                                    type: number
+                                    minimum: 1
+                healthy:
+                    type: boolean
+                servingUnit:
+                    type: string
+                note:
+                    type: string
+                ingredients:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            groupLabel:
+                                type: string
+                                minLength: 3
+                                maxLength: 64
+                            ingredients:
+                                type: array
+                                items:
+                                    type: object
+                                    properties:
+                                        ingredientId:
+                                            type: string
+                                            format: objectID
+                                        quantity:
+                                            type: string
+                instructions:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            type:
+                                type: string
+                                enum:
+                                    - intro
+                                    - preparation
+                                    - conservation
+                                    - advice
+                                    - generic
+                            title:
+                                type: string
+                                maxLength: 225
+                            text:
+                                type: string
+                            images:
+                                type: array
+                                items:
+                                    type: object
+                                    properties:
+                                        kind:
+                                            type: string
+                                            enum:
+                                                - block
+                                                - inline
+                                        image:
+                                            type: string
+                                            minLength: 6
+                                            maxLength: 2048
+                                            pattern: /^https?:\/\/\S+\/\.(jpe?g|png|gif|bmp|webp)$/
+                                            format: url
+                                            example: https://www.example.com/image.jpg
+                                    default: []
+                category:
+                    type: string
+                    format: objectID
+                subCategory:
+                    type: string
+                    format: objectID
+                tags:
+                    type: array
+                    items:
+                        type: string
+                        format: objectID
+                # category:
+                #     $ref: '#/components/schemas/Category'
+                # subCategory:
+                #     $ref: '#/components/schemas/Category'
+                # tags:
+                #     type: array
+                #     items:
+                #         $ref: '#/components/schemas/Tag'
+        ApiResponse:
+            type: object
+            properties:
+                data:
+                    type: object
+                    nullable: true
+                msgCode:
+                    type: number
+                message:
+                    type: string
+                info:
+                    oneOf:
+                      - type: string
+                      - type: object
+                    nullable: true
+                errors:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            message:
+                                type: string
+                            type:
+                                type: string
+                                enum:
+                                    - email
+                                    - emailEmpty
+                                    - emailMax
+                                    - emailMin
+                                    - equalField
+                                    - length
+                                    - max
+                                    - min
+                                    - number
+                                    - numberNotEqual
+                                    - numberPositive
+                                    - objectID
+                                    - objectStrict
+                                    - pattern
+                                    - required
+                                    - string
+                                    - stringEmpty
+                                    - stringEnum
+                                    - stringLength
+                                    - stringMax
+                                    - stringMin
+                                    - url
+                            field:
+                                type: string
+                        nullable: true
+            # xml:
+            #     name: '##default'
+    requestBodies:
+        Recipe:
+            description: Recipe object that needs to be added to the store
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Recipe'    
+    securitySchemes:
+        accessToken:
+            type: apiKey
+            description: you can get this token from /auth/login endpoint at the response header
+            name: x-access-token
+            in: header
+    
+    headers:
+        X-Rate-Limit-Limit:
+            description: The number of allowed requests in the current period
+            schema:
+                type: number
+        X-Rate-Limit-Remaining:
+            description: The number of remaining requests in the current period
+            schema:
+                type: number
+        X-Rate-Limit-Reset:
+            description: The number of seconds left in the current period
+            schema:
+                type: number
+        x-access-token:
+            description: you can get this token from /auth/login endpoint at the response header
+            schema:
+                type: string
+
+# security:
+#   - accessToken: []

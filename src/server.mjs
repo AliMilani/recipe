@@ -6,6 +6,7 @@
 import './loaders/loadEnv.mjs'
 import './loaders/loadLogger.mjs'
 import './loaders/loadDB.mjs'
+// import './loaders/loadDoc.mjs'
 
 /**
  * Module dependencies.
@@ -67,7 +68,7 @@ function onError(error) {
 function onListening() {
     const addr = server.address()
     const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port
-    console.log('Listening on ' + bind)
+    console.info('Listening on ' + bind)
 }
 
 export default server

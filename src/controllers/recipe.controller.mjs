@@ -239,8 +239,8 @@ class Recipe extends Controller {
                 errors.push({
                     type: 'DB_ERROR',
                     message: `the category id ${recipe.category} does not exist in the database`,
-                    field: 'category',
-                    actual: recipe.category
+                    field: 'category'
+                    // actual: recipe.category
                 })
         }
         let subCategory
@@ -251,8 +251,8 @@ class Recipe extends Controller {
                 errors.push({
                     type: 'DB_ERROR',
                     message: `the sub category id ${recipe.subCategory} does not exist in the database`,
-                    field: 'subCategory',
-                    actual: recipe.subCategory
+                    field: 'subCategory'
+                    // actual: recipe.subCategory
                 })
         }
         if (category === undefined && oldRecipe) category = oldRecipe.category.toString()
@@ -265,8 +265,8 @@ class Recipe extends Controller {
             errors.push({
                 type: 'DB_ERROR',
                 message: `the sub category id ${recipe.subCategory} does not belong to the category id ${recipe.category}`,
-                field: 'subCategory',
-                actual: recipe.subCategory
+                field: 'subCategory'
+                // actual: recipe.subCategory
             })
         }
         let tags
@@ -285,8 +285,8 @@ class Recipe extends Controller {
                                 type: 'DB_ERROR',
                                 message: `${tag} is not exist in the database`,
                                 field: path,
-                                // actual: recipe.tags
-                                actual: tag
+                                actual: recipe.tags
+                                // actual: tag
                             })
                         } else {
                             return acc
@@ -302,8 +302,8 @@ class Recipe extends Controller {
                 errors.push({
                     type: 'DB_ERROR',
                     message: `the chef id ${recipe.chef} does not exist in the database`,
-                    field: 'chef',
-                    actual: recipe.chef
+                    field: 'chef'
+                    // actual: recipe.chef
                 })
         }
         if (recipe.ingredients) {
@@ -319,8 +319,8 @@ class Recipe extends Controller {
                                     errors.push({
                                         type: 'DB_ERROR',
                                         message: `the ingredient id ${ingredient.ingredientId} does not exist in the database`,
-                                        field: `ingredients[${ingredientGroupIndex}].ingredients[${ingredientIndex}].ingredientId`,
-                                        actual: ingredient.ingredientId
+                                        field: `ingredients[${ingredientGroupIndex}].ingredients[${ingredientIndex}].ingredientId`
+                                        // actual: ingredient.ingredientId
                                     })
                             } catch (err) {
                                 reject(err)
@@ -420,13 +420,21 @@ class Recipe extends Controller {
 
     search = async (req, res) => {
         const { query } = req
-
+        // ! FIXME: q query is required
         const dbQuery = await this.#recipeFilterGenerateQuery(
             query,
             this.#defaultRecipeFilterFields
         )
-        const searchQuery = _.trim(query.q)
-
+        const searchQuery = _.trim(query.q) || null
+        console.log(searchQuery
+            ? {
+                $text: {
+                    $search: searchQuery,
+                    $caseSensitive: false
+                }
+            }
+            : {})
+        // ! FIXME: search query keyword should send in the body
         const targetRecipes = await this.#getFilteredRecipesFromDB(
             { dbQuery },
             {
@@ -440,7 +448,8 @@ class Recipe extends Controller {
                           }
                       }
                     : {},
-                aditionalPaginationOptions: {
+                aditionalPaginationOptions: searchQuery
+                ?{
                     select: {
                         score: {
                             $meta: 'textScore'
@@ -452,12 +461,12 @@ class Recipe extends Controller {
                             $meta: 'textScore'
                         }
                     }
-                }
+                }:{}
             }
         )
 
         this.self.response(res, {
-            data: targetRecipes,
+            data: { ...targetRecipes, q: searchQuery },
             code: Code.OK,
             info: {
                 dbQuery

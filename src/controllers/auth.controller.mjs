@@ -117,7 +117,7 @@ class Auth extends Controller {
             const sortedSessions = activeSession.sort((a, b) => {
                 return new Date(a.rValidUntil).getTime() - new Date(b.rValidUntil).getTime()
             })
-            // console.log(sortedSessions.length);
+
             //deactivate old sessions
             for (let i = 0; i <= sortedSessions.length - totalActiveSessionPerUser; i++) {
                 await tokenService.updateById(sortedSessions[i]._id, {
@@ -218,7 +218,7 @@ class Auth extends Controller {
             } else {
                 // token not found
                 return this.self.response(res, {
-                    code: Code.TOKEN_DOES_NOT_EXIST,
+                    code: Code.TOKEN_DOES_NOT_EXIST, // TODO: change status code to gone or something else
                     info: 'refresh token not found in database'
                 })
             }
@@ -228,7 +228,7 @@ class Auth extends Controller {
     }
 
     refreshToken = async (req, res) => {
-        const { refreshToken } = req.body
+        const { refreshToken } = req.body // TODO: add validation for refresh token
 
         // get token
         const targetToken = await tokenService.findByRefreshToken(
@@ -237,8 +237,10 @@ class Auth extends Controller {
         // check if token exist
         if (!targetToken) {
             return this.self.response(res, {
+                // FIXME: change code and status code (406 is invalid status code)
+                // ? gone (410) or conflict (409) is more suitable
                 code: Code.TOKEN_DOES_NOT_EXIST,
-                info: 'maybe the token was rotated or user logged out'
+                info: 'maybe the token was rotated or user logged out'  
             })
         }
         // check if token is active

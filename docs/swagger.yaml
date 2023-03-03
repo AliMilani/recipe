@@ -1,0 +1,2749 @@
+openapi: 3.0.3
+info:
+    title: Recipe API - OpenAPI 3.0
+    description: |-
+        This documentation includes **endpoints**, how to authenticate, and all the information you need to know about the API
+
+         # Overview
+
+         1.  The API has an access <a href="#rate-limits">rate limit</a> applied to it
+         2.  Response to every request is sent in [JSON format](https://en.wikipedia.org/wiki/JSON). In case the API request results in an error, it is represented by an `"errors": {}` key in the JSON response.
+         3.  The request method (verb) determines the nature of action you intend to perform. A request made using the GET method implies that you want to fetch something from application, and POST implies you want to save something new to application.
+         4.  **Info**, **message** and **devMessage** properties in JSON response are only available in _development mode._
+         5.  The API calls will respond with appropriate [HTTP status codes](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) for all requests. Within Client, when a response is received, the status code is highlighted and is accompanied by a help text that indicates the possible meaning of the response code. A `200 OK` indicates all went well, while `4XX` or `5XX` response codes indicate an error from the requesting client or our API servers respectively.
+             
+
+         \*   **Access tokens** may be extended. If this option is enabled, you will receive the **x-set-access-token** header in the response, which you **must replace with the previous access token**.
+         \*   To prevent user enumeration attacks, we have rate limiting, after reaching our limit, we will receive status code 429  
+             The rate limiting conditions are as follows:
+             \*   500 requests in 15 minutes for all endpoints
+             \*   rate limiting in endpoints ([auth](#auth) and [password](#password))
+         \*   If the JSON request is in an incorrect format, you will get a JSON_SYNTAX_ERROR error
+         \*   The slug can only contain English, Persian and Arabic numbers and letters (Persian and Arabic numbers are converted to English), it is better to perform sanitization before sending the slug.
+         \*   the server automatically removes the invalid characters, If the slug does not contain any valid characters, if the name property exists, the server will choose it as a slug.
+         \*   If the slug is duplicated, the server automatically adds a unique number to the end with a hyphen.
+             
+
+         # Authentication
+
+         If needed to add, change or delete resources according to User Role, the access token is required to be sent as part of every request to the API, in the form of an x-access-token request header.
+
+         > **Access tokens** may be extended ([access token extension](#access-token-extension)). If this option is enabled, you will receive the `x-set-access-token` header in the response, which you **must replace with the previous access token**.
+
+         ## Access token related error response
+
+         ### Error when access token is not set:
+
+         If an access token is missing, you will receive a `401 Unauthorised` response code and the following JSON response:
+
+         ``` json
+         {
+             "message": "عدم احراز هویت",
+             "devMessage": "access token is not set",
+             "data": {},
+             "msgCode": 40105
+         }
+
+         ```
+
+         ### Error when access token is malformed, or invalid:
+
+         If an access token is malformed, or invalid, you will receive a `401 Unauthorised` response code and the following JSON response:
+
+         ``` json
+         {
+             "message": "عدم احراز هویت",
+             "devMessage": "access token is invalid",
+             "data": {},
+             "msgCode": 40107
+         }
+
+         ```
+
+         ## Ways to get a new access token
+
+         In general, access-token and [refresh-token](#refresh-token) are created in three ways, **login**, **sign-up** or using **refresh token**.  
+         If the option to limit the number of active sessions is enabled(_In the application configuration_), if the user reaches the limit, the oldest session will expire!
+
+         ## Tokens behavior
+
+         Tokens can show different behavior based on the application configuration.
+
+         ### access token extension
+
+         If this option is enabled, token will be sent to you based on the expiration time and _extension percentage_ set in the (_application configuration_) in the request header where the access token is provided `x-set-access-token` .  
+         It should be noted that the previous token will remain active until the expiration date unless the user has logged out and invalidated the token.  
+         It is possible that there is a limit on the number of extensions that can no longer be extended after reaching the set limit.
+
+         ### refresh token rotation
+
+         When you request a new refresh token, the previous token will expire and new tokens will be sent to you.  
+         It is possible that there is a limit on the number of rotate (_In the application configuration_) that can no longer be rotated after reaching the set limit.
+
+         # Rate Limits
+
+         API access rate limits are applied at a per-key basis in unit time. Access to the API using a key is limited to **500 requests per 15 minute**. In addition, every API response is accompanied by the following set of headers to identify the status of your consumption.
+
+         | Header | Description |
+         | --- | --- |
+         | `X-RateLimit-Limit` | The maximum number of requests that the consumer is permitted to make per specified time. |
+         | `X-RateLimit-Remaining` | The number of requests remaining in the current rate limit window. |
+         | `X-RateLimit-Reset` | The time at which the current rate limit window resets in UTC epoch seconds. |
+
+         ## Rate Limit will be different in the following endpoints:
+
+         | Endpoint | **Limit** |
+         | --- | --- |
+         | `/\*` | **500 requests** per **15 minute** by `IP` |
+         | `/auth/signup` | **20 requests** per **15 minute** by `IP`  <br>**100 requests** per **5 hours** by `IP` |
+         | `/auth/signin` | **20 requests** per **15 minute** by `IP`  <br>**100 requests** per **2 hours** by `IP` |
+         | `/password/request` | **5 requests** per **10 minute** by `body.email`  <br>**100 requests** per **5 hours** by `IP` |
+         | `/password/verify` | **1 requests** per **2 hours** by `body.token`  <br>**100 requests** per **2 hours** by `IP` |
+         | `/password/reset` | **150 requests** per **2 hours** by `IP` |
+
+         Once you hit the rate limit, you will receive a response similar to the following JSON, with a status code of `429 Too Many Requests`.
+
+         ``` json
+         {
+             "message": "You sent too many requests. Please wait a while then try again",
+             "info": "rate limit exceeded (500 requests per 15 minutes)",
+             "data": {},
+             "msgCode": 42902
+         }
+
+         ```
+    # TODO: اضافه کردن اصطلاحات فنی مثلا 'ابجکت ایدی' به داکیومنتیشن
+    # API Reference
+    version: 1.0.0
+externalDocs:
+    description: Find out more about Swagger
+    url: http://swagger.io
+servers:
+    - url: http://localhost:5000
+tags:
+    - name: auth
+      description: Authentication operations
+    - name: user
+      description: Operations about user
+    #   externalDocs:
+    #       description: postman
+    #       url: http://postnam....
+    - name: password
+      description: password reset operations
+    - name: recipe
+      description: recipe operations
+    - name: category
+      description: category operations
+    - name: sub-category
+      description: sub-category operations
+    - name: ingredient
+      description: ingredient operations
+    - name: chef
+      description: chef operations
+    - name: tag
+      description: tag operations
+paths:
+    /recipes:
+        get:
+            tags:
+                - 'recipe'
+            summary: 'Get all recipes'
+            description: 'Returns all recipes with pagination and user filters'
+            operationId: 'getRecipes'
+            parameters:
+                - $ref: '#/components/parameters/page'
+                - $ref: '#/components/parameters/limit'
+                - $ref: '#/components/parameters/category'
+                - $ref: '#/components/parameters/sub-category'
+                - $ref: '#/components/parameters/tag'
+                - $ref: '#/components/parameters/difficulty'
+                - in: query
+                  name: healthy
+                  description: 'the healthiness of the recipe'
+                  required: false
+                  schema:
+                      type: boolean
+                - in: query
+                  name: rate
+                  description: 'rate of recipe'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          gt:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          gte:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          eq:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          ne:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          lt:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          lte:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: preparation_time
+                  description: 'preparation time in minutes'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          gt:
+                              type: number
+                              minimum: 1
+                          gte:
+                              type: number
+                              minimum: 1
+                          eq:
+                              type: number
+                              minimum: 1
+                          ne:
+                              type: number
+                              minimum: 1
+                          lt:
+                              type: number
+                              minimum: 1
+                          lte:
+                              type: number
+                              minimum: 1
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: cooking_time
+                  description: 'cooking time in minutes'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          gt:
+                              type: number
+                              minimum: 1
+                          gte:
+                              type: number
+                              minimum: 1
+                          eq:
+                              type: number
+                              minimum: 1
+                          ne:
+                              type: number
+                              minimum: 1
+                          lt:
+                              type: number
+                              minimum: 1
+                          lte:
+                              type: number
+                              minimum: 1
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: ingredient
+                  description: 'ingredient id'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          id:
+                              $ref: '#/components/schemas/objectId'
+                  explode: false
+                  style: deepObject
+
+            responses:
+                '200':
+                    description: 'successful operation'
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    data:
+                                        type: object
+                                        properties:
+                                            items:
+                                                type: array
+                                                items:
+                                                    $ref: '#/components/schemas/RecipeRead'
+                                            page:
+                                                type: number
+                                                default: 1
+                                            limit:
+                                                type: number
+                                                default: 10
+                                            totalPages:
+                                                type: number
+                                            totalDocs:
+                                                type: number
+                                            hasPrevPage:
+                                                type: boolean
+                                            hasNextPage:
+                                                type: boolean
+                                            prevPage:
+                                                type: number
+                                            nextPage:
+                                                type: number
+                                    message:
+                                        type: string
+                                        example: 'عملیات موفقیت آمیز بود'
+                                    msgCode:
+                                        type: number
+                                        example: 200
+                                    info:
+                                        oneOf:
+                                            - type: string
+                                            - type: object
+                                        example: {}
+        post:
+            tags:
+                - 'recipe'
+            summary: 'Create a recipe'
+            description: 'Creates a new recipe'
+            operationId: 'createRecipe'
+            security:
+                - accessToken: []
+            requestBody:
+                $ref: '#/components/requestBodies/RecipeCreate'
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '201':
+                    $ref: '#/components/responses/RecipeSuccess'
+                '400':
+                    $ref: '#/components/responses/BadRequestInCreate'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/RecipeNotFound'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+
+    /recipes/{recipeId}:
+        get:
+            tags:
+                - 'recipe'
+            summary: 'Get recipe by id'
+            description: 'Returns a single recipe'
+            operationId: 'getRecipeById'
+            parameters:
+                - $ref: '#/components/parameters/recipeId'
+            responses:
+                '200':
+                    description: Ok
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/RecipeRead'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '404':
+                    $ref: '#/components/responses/RecipeNotFound'
+        put:
+            tags:
+                - 'recipe'
+            summary: 'Update recipe'
+            description: 'Update recipe'
+            operationId: 'updateRecipe'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/recipeId'
+            requestBody:
+                $ref: '#/components/requestBodies/RecipeUpdate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/RecipeSuccess'
+                '400':
+                    $ref: '#/components/responses/BadRequestInWrite'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/RecipeNotFound'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+        delete:
+            tags:
+                - 'recipe'
+            summary: 'Delete recipe'
+            description: 'Delete recipe'
+            operationId: 'deleteRecipe'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/recipeId'
+            # requestBody:
+            #     $ref: '#/components/requestBodies/RecipeBody'
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/Ok'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/RecipeNotFound'
+    /recipes/search:
+        get:
+            tags:
+                - 'recipe'
+            summary: 'Search recipes'
+            description: 'Returns search results with pagination and user filters'
+            operationId: 'searchRecipes'
+            parameters:
+                - in: query
+                  name: q
+                  description: 'search query'
+                  required: false
+                  schema:
+                      type: string
+                  example: 'پاساتا'
+                - $ref: '#/components/parameters/page'
+                - $ref: '#/components/parameters/limit'
+                - $ref: '#/components/parameters/category'
+                - $ref: '#/components/parameters/sub-category'
+                - $ref: '#/components/parameters/tag'
+                - $ref: '#/components/parameters/difficulty'
+                - in: query
+                  name: healthy
+                  description: 'the healthiness of the recipe'
+                  required: false
+                  schema:
+                      type: boolean
+                - in: query
+                  name: rate
+                  description: 'rate of recipe'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          gt:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          gte:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          eq:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          ne:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          lt:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                          lte:
+                              type: number
+                              minimum: 0
+                              maximum: 5
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: preparation_time
+                  description: 'preparation time in minutes'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          gt:
+                              type: number
+                              minimum: 1
+                          gte:
+                              type: number
+                              minimum: 1
+                          eq:
+                              type: number
+                              minimum: 1
+                          ne:
+                              type: number
+                              minimum: 1
+                          lt:
+                              type: number
+                              minimum: 1
+                          lte:
+                              type: number
+                              minimum: 1
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: cooking_time
+                  description: 'cooking time in minutes'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          gt:
+                              type: number
+                              minimum: 1
+                          gte:
+                              type: number
+                              minimum: 1
+                          eq:
+                              type: number
+                              minimum: 1
+                          ne:
+                              type: number
+                              minimum: 1
+                          lt:
+                              type: number
+                              minimum: 1
+                          lte:
+                              type: number
+                              minimum: 1
+                  explode: true
+                  style: deepObject
+                - in: query
+                  name: ingredient
+                  description: 'ingredient id'
+                  required: false
+                  schema:
+                      type: object
+                      properties:
+                          id:
+                              $ref: '#/components/schemas/objectId'
+                  explode: false
+                  style: deepObject
+
+            responses:
+                '200':
+                    description: 'successful operation'
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    data:
+                                        type: object
+                                        properties:
+                                            items:
+                                                type: array
+                                                items:
+                                                    $ref: '#/components/schemas/RecipeRead'
+                                            page:
+                                                type: number
+                                                default: 1
+                                            limit:
+                                                type: number
+                                                default: 10
+                                            totalPages:
+                                                type: number
+                                            totalDocs:
+                                                type: number
+                                            hasPrevPage:
+                                                type: boolean
+                                            hasNextPage:
+                                                type: boolean
+                                            prevPage:
+                                                type: number
+                                            nextPage:
+                                                type: number
+                                    message:
+                                        type: string
+                                        example: 'عملیات موفقیت آمیز بود'
+                                    msgCode:
+                                        type: number
+                                        example: 200
+                                    info:
+                                        oneOf:
+                                            - type: string
+                                            - type: object
+                                        example: {}
+    /auth/signin:
+        post:
+            tags:
+                - 'auth'
+            summary: 'SignIn user'
+            description: 'SignIn user'
+            operationId: 'signin'
+            requestBody:
+                $ref: '#/components/requestBodies/EmailPassword'
+            responses:
+                '201':
+                    $ref: '#/components/responses/AuthSuccess'
+                '400':
+                    $ref: '#/components/responses/BadRequestInCreate'
+                '404':
+                    $ref: '#/components/responses/UserNotFound'
+                '401':
+                    $ref: '#/components/responses/LoginFailed'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+    /auth/signup:
+        post:
+            tags:
+                - 'auth'
+            summary: 'SignUp user'
+            description: 'SignUp user'
+            operationId: 'signup'
+            requestBody:
+                $ref: '#/components/requestBodies/EmailPassword'
+            responses:
+                '201':
+                    $ref: '#/components/responses/AuthSuccess'
+                '400':
+                    $ref: '#/components/responses/BadRequestInCreate'
+                # '404':
+                #     $ref: '#/components/responses/UserNotFound'
+                '409':
+                    $ref: '#/components/responses/DuplicateEmail'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+    /auth/refresh-token:
+        post:
+            tags:
+                - 'auth'
+            summary: 'Refresh token'
+            description: 'Refresh token'
+            operationId: 'refreshToken'
+            requestBody:
+                $ref: '#/components/requestBodies/RefreshToken'
+            responses:
+                '201':
+                    $ref: '#/components/responses/RefreshTokenSuccess'
+                '400':
+                    $ref: '#/components/responses/BadRequestInCreate'
+                '401':
+                    description: 'Refresh token is expired'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiResponse'
+                            examples:
+                                REFRESH_TOKEN_EXPIRED:
+                                    value:
+                                        data: {}
+                                        message: 'عدم احراز هویت'
+                                        devMessage: 'refresh token is expired'
+                                        msgCode: 40102
+                                        info: {}
+                '404':
+                    # TODO: find better status code, 404 is not correct
+                    $ref: '#/components/responses/UserNotFound'
+                '406':
+                    # TODO: Not Acceptable is not correct, gone (410) or conflict (409) is more suitable
+                    description: 'Not Acceptable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiResponse'
+                            examples:
+                                TOKEN_DOES_NOT_EXIST:
+                                    value:
+                                        data: {}
+                                        message: 'دیتای ورودی معتبر نیست'
+                                        devMessage: 'توکن وجود ندارد'
+                                        msgCode: 40601
+                                        info: {}
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+    /auth/logout:
+        post:
+            tags:
+                - 'auth'
+            summary: 'Logout user'
+            description: 'Logout user'
+            operationId: 'logout'
+            parameters:
+                - in: header
+                  name: x-refresh-token
+                  description: 'refresh token'
+                  required: true
+                  schema:
+                      $ref: '#/components/schemas/refreshToken'
+                - in: header
+                  name: x-access-token
+                  description: 'access token'
+                  schema:
+                      $ref: '#/components/schemas/accessToken'
+            security:
+                - bearerAuth: []
+            responses:
+                '200':
+                    $ref: '#/components/responses/Ok'
+                # '401':
+                #     $ref: '#/components/responses/Unauthorized'
+                '406':
+                    # TODO: Not Acceptable is not correct, gone (410) or conflict (409) is more suitable
+                    description: 'Not Acceptable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiResponse'
+                            examples:
+                                TOKEN_DOES_NOT_EXIST:
+                                    value:
+                                        data: {}
+                                        message: 'دیتای ورودی معتبر نیست'
+                                        devMessage: 'توکن وجود ندارد'
+                                        msgCode: 40601
+                                        info: refresh token not found in database
+                '422':
+                    description: 'Refresh token not set'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiResponse'
+                            examples:
+                                REFRESH_TOKEN_NOT_SET:
+                                    value:
+                                        data: {}
+                                        message: 'عدم احراز هویت'
+                                        devMessage: 'refresh token is not set'
+                                        msgCode: 42202
+                                        info: {}
+
+    /password/request:
+        post:
+            tags:
+                - 'password'
+            summary: 'Request password reset'
+            description: 'Request password reset'
+            operationId: 'requestPasswordReset'
+            requestBody:
+                $ref: '#/components/requestBodies/Email'
+            responses:
+                '200':
+                    $ref: '#/components/responses/Ok'
+                '422':
+                    description: 'Refresh token not set'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiResponse'
+                            examples:
+                                RECAPTCHA_VERIFICATION_FAILED:
+                                    value:
+                                        data: {}
+                                        message: 'کپچا معتبر نیست'
+                                        msgCode: 42203
+                                        info: {}
+                                INPUT_DATA_INVALID:
+                                    $ref: '#/components/examples/INPUT_DATA_INVALID'
+                '500':
+                    description: 'Server Error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiResponse'
+                            examples:
+                                EMAIL_ERROR:
+                                    value:
+                                        data: {}
+                                        message: 'خطایی در ارسال ایمیل رخ داده است'
+                                        msgCode: 50003
+                                        info: {}
+    /password/verify:
+        post:
+            tags:
+                - 'password'
+            summary: 'Verify password reset token'
+            description: 'Verify password reset token'
+            operationId: 'verifyPasswordResetToken'
+            requestBody:
+                $ref: '#/components/requestBodies/PasswordResetToken'
+            responses:
+                '200':
+                    $ref: '#/components/responses/Ok'
+                '422':
+                    description: 'Refresh token not set'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiResponse'
+                            examples:
+                                INPUT_DATA_INVALID:
+                                    $ref: '#/components/examples/INPUT_DATA_INVALID'
+    /users:
+        post:
+            tags:
+                - 'user'
+            summary: 'Create user'
+            description: 'Create user'
+            operationId: 'createUser'
+            security:
+                - accessToken: []
+            requestBody:
+                $ref: '#/components/requestBodies/UserCreate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '201':
+                    $ref: '#/components/responses/UserSuccess'
+                '400':
+                    $ref: '#/components/responses/BadRequestInCreate'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                # '404':
+                #     $ref: '#/components/responses/UserNotFound'
+                '409':
+                    $ref: '#/components/responses/DuplicateEmail'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+    /users/{userId}:
+        get:
+            tags:
+                - 'user'
+            summary: 'Get user'
+            description: 'Get user'
+            operationId: 'getUser'
+            parameters:
+                - $ref: '#/components/parameters/userId'
+            responses:
+                '200':
+                    $ref: '#/components/responses/UserSuccess'
+                    description: 'aaaaaa operation'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '404':
+                    $ref: '#/components/responses/UserNotFound'
+        put:
+            tags:
+                - 'user'
+            summary: 'Update user'
+            description: 'Update user'
+            operationId: 'updateUser'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/userId'
+            requestBody:
+                $ref: '#/components/requestBodies/UserUpdate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/UserSuccess'
+                '400':
+                    $ref: '#/components/responses/BadRequestInWrite'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/UserNotFound'
+                '409':
+                    $ref: '#/components/responses/DuplicateEmail'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+        delete:
+            tags:
+                - 'user'
+            summary: 'Delete user'
+            description: 'Delete user'
+            operationId: 'deleteUser'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/userId'
+            # requestBody:
+            #     $ref: '#/components/requestBodies/UserBody'
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/Ok'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/UserNotFound'
+    /categories:
+        post:
+            tags:
+                - 'category'
+            summary: 'Create category'
+            description: 'Create category'
+            operationId: 'createCategory'
+            security:
+                - accessToken: []
+            requestBody:
+                $ref: '#/components/requestBodies/CategoryCreate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '201':
+                    description: Created
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/Category'
+                            examples:
+                                CREATED:
+                                    value:
+                                        msgCode: 201
+                                        message: 'عملیات با موفقیت انجام شد'
+                                        data:
+                                            _id: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                            name: 'Category 1'
+                                            description: 'Category 1 description'
+                                            slug: 'category-1'
+                                        info: {}
+                '400':
+                    $ref: '#/components/responses/BadRequestInCreate'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+    /categories/{categoryId}:
+        get:
+            tags:
+                - 'category'
+            summary: 'Get category'
+            description: 'Get category'
+            operationId: 'getCategory'
+            parameters:
+                - $ref: '#/components/parameters/categoryId'
+            responses:
+                '200':
+                    $ref: '#/components/responses/CategoryOk'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '404':
+                    $ref: '#/components/responses/CategoryNotFound'
+        put:
+            tags:
+                - 'category'
+            summary: 'Update category'
+            description: 'Update category'
+            operationId: 'updateCategory'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/categoryId'
+            requestBody:
+                $ref: '#/components/requestBodies/CategoryUpdate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/CategoryOk'
+                '400':
+                    $ref: '#/components/responses/BadRequestInWrite'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/CategoryNotFound'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+        delete:
+            tags:
+                - 'category'
+            summary: 'Delete category'
+            description: 'Delete category'
+            operationId: 'deleteCategory'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/categoryId'
+            # requestBody:
+            #     $ref: '#/components/requestBodies/CategoryBody'
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/Ok'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/CategoryNotFound'
+    /sub-categories:
+        post:
+            tags:
+                - 'sub-category'
+            summary: 'Create subCategory'
+            description: 'Create subCategory'
+            operationId: 'createSubCategory'
+            security:
+                - accessToken: []
+            requestBody:
+                $ref: '#/components/requestBodies/SubCategoryCreate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '201':
+                    description: Created
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/SubCategory'
+                            examples:
+                                CREATED:
+                                    value:
+                                        msgCode: 201
+                                        message: 'عملیات با موفقیت انجام شد'
+                                        data:
+                                            _id: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                            name: 'SubCategory 1'
+                                            description: 'SubCategory 1 description'
+                                            slug: 'subCategory-1'
+                                            category: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                        info: {}
+                '400':
+                    $ref: '#/components/responses/BadRequestInCreate'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '409':
+                    $ref: '#/components/responses/ParentCategoryNotFound'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+    /sub-categories/{subCategoryId}:
+        get:
+            tags:
+                - 'sub-category'
+            summary: 'Get subCategory'
+            description: 'Get subCategory'
+            operationId: 'getSubCategory'
+            parameters:
+                - $ref: '#/components/parameters/subCategoryId'
+            responses:
+                '200':
+                    $ref: '#/components/responses/SubCategoryOk'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '404':
+                    $ref: '#/components/responses/SubCategoryNotFound'
+        put:
+            tags:
+                - 'sub-category'
+            summary: 'Update subCategory'
+            description: 'Update subCategory'
+            operationId: 'updateSubCategory'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/subCategoryId'
+            requestBody:
+                $ref: '#/components/requestBodies/SubCategoryUpdate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/SubCategoryOk'
+                '400':
+                    $ref: '#/components/responses/BadRequestInWrite'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/SubCategoryNotFound'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+        delete:
+            tags:
+                - 'sub-category'
+            summary: 'Delete subCategory'
+            description: 'Delete subCategory'
+            operationId: 'deleteSubCategory'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/subCategoryId'
+            # requestBody:
+            #     $ref: '#/components/requestBodies/SubCategoryBody'
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/Ok'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/SubCategoryNotFound'
+    /tag:
+        post:
+            tags:
+                - 'tag'
+            summary: 'Create tag'
+            description: 'Create tag'
+            operationId: 'createTag'
+            security:
+                - accessToken: []
+            requestBody:
+                $ref: '#/components/requestBodies/TagCreate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '201':
+                    description: Created
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/Tag'
+                            examples:
+                                CREATED:
+                                    value:
+                                        msgCode: 201
+                                        message: 'عملیات با موفقیت انجام شد'
+                                        data:
+                                            _id: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                            name: 'Tag 1'
+                                            slug: 'tag-1'
+                                            tagType: DIET
+                                        info: {}
+                '400':
+                    $ref: '#/components/responses/BadRequestInCreate'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+    /tag/{tagId}:
+        get:
+            tags:
+                - 'tag'
+            summary: 'Get tag'
+            description: 'Get tag'
+            operationId: 'getTag'
+            parameters:
+                - $ref: '#/components/parameters/tagId'
+            responses:
+                '200':
+                    $ref: '#/components/responses/TagOk'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '404':
+                    $ref: '#/components/responses/TagNotFound'
+        put:
+            tags:
+                - 'tag'
+            summary: 'Update tag'
+            description: 'Update tag'
+            operationId: 'updateTag'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/tagId'
+            requestBody:
+                $ref: '#/components/requestBodies/TagUpdate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/TagOk'
+                '400':
+                    $ref: '#/components/responses/BadRequestInWrite'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/TagNotFound'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+        delete:
+            tags:
+                - 'tag'
+            summary: 'Delete tag'
+            description: 'Delete tag'
+            operationId: 'deleteTag'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/tagId'
+            # requestBody:
+            #     $ref: '#/components/requestBodies/TagBody'
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/Ok'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/TagNotFound'
+    /ingredient:
+        post:
+            tags:
+                - 'ingredient'
+            summary: 'Create ingredient'
+            description: 'Create ingredient'
+            operationId: 'createIngredient'
+            security:
+                - accessToken: []
+            requestBody:
+                $ref: '#/components/requestBodies/IngredientCreate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '201':
+                    description: Created
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/Ingredient'
+                            examples:
+                                CREATED:
+                                    value:
+                                        msgCode: 201
+                                        message: 'عملیات با موفقیت انجام شد'
+                                        data:
+                                            _id: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                            name: 'Ingredient 1'
+                                            image: 'https://www.example.com/image.jpg'
+                                        info: {}
+                '400':
+                    $ref: '#/components/responses/BadRequestInCreate'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+    /ingredient/{ingredientId}:
+        get:
+            tags:
+                - 'ingredient'
+            summary: 'Get ingredient'
+            description: 'Get ingredient'
+            operationId: 'getIngredient'
+            parameters:
+                - $ref: '#/components/parameters/ingredientId'
+            responses:
+                '200':
+                    $ref: '#/components/responses/IngredientOk'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '404':
+                    $ref: '#/components/responses/IngredientNotFound'
+        put:
+            tags:
+                - 'ingredient'
+            summary: 'Update ingredient'
+            description: 'Update ingredient'
+            operationId: 'updateIngredient'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/ingredientId'
+            requestBody:
+                $ref: '#/components/requestBodies/IngredientUpdate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/IngredientOk'
+                '400':
+                    $ref: '#/components/responses/BadRequestInWrite'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/IngredientNotFound'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+        delete:
+            tags:
+                - 'ingredient'
+            summary: 'Delete ingredient'
+            description: 'Delete ingredient'
+            operationId: 'deleteIngredient'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/ingredientId'
+            # requestBody:
+            #     $ref: '#/components/requestBodies/IngredientBody'
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/Ok'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/IngredientNotFound'
+    /chef:
+        post:
+            tags:
+                - 'chef'
+            summary: 'Create chef'
+            description: 'Create chef'
+            operationId: 'createChef'
+            security:
+                - accessToken: []
+            requestBody:
+                $ref: '#/components/requestBodies/ChefCreate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '201':
+                    description: Created
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/ApiResponse'
+                                    - type: object
+                                      properties:
+                                          data:
+                                              $ref: '#/components/schemas/Chef'
+                            examples:
+                                CREATED:
+                                    value:
+                                        msgCode: 201
+                                        message: 'عملیات با موفقیت انجام شد'
+                                        data:
+                                            _id: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                            name: 'Chef 1'
+                                            image: 'https://www.example.com/image.jpg'
+                                            userId: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                            slug: 'chef-1'
+                                        info: {}
+                '400':
+                    $ref: '#/components/responses/BadRequestInCreate'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+    /chef/{chefId}:
+        get:
+            tags:
+                - 'chef'
+            summary: 'Get chef'
+            description: 'Get chef'
+            operationId: 'getChef'
+            parameters:
+                - $ref: '#/components/parameters/chefId'
+            responses:
+                '200':
+                    $ref: '#/components/responses/ChefOk'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '404':
+                    $ref: '#/components/responses/ChefNotFound'
+        put:
+            tags:
+                - 'chef'
+            summary: 'Update chef'
+            description: 'Update chef'
+            operationId: 'updateChef'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/chefId'
+            requestBody:
+                $ref: '#/components/requestBodies/ChefUpdate'
+
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/ChefOk'
+                '400':
+                    $ref: '#/components/responses/BadRequestInWrite'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/ChefNotFound'
+                '422':
+                    $ref: '#/components/responses/ValidationError'
+        delete:
+            tags:
+                - 'chef'
+            summary: 'Delete chef'
+            description: 'Delete chef'
+            operationId: 'deleteChef'
+            security:
+                - accessToken: []
+            parameters:
+                - $ref: '#/components/parameters/chefId'
+            # requestBody:
+            #     $ref: '#/components/requestBodies/ChefBody'
+            responses:
+                default:
+                    description: 'default response'
+                    headers:
+                        x-set-access-token:
+                            $ref: '#/components/headers/x-set-access-token'
+                '200':
+                    $ref: '#/components/responses/Ok'
+                '400':
+                    $ref: '#/components/responses/InvalidId'
+                '401':
+                    $ref: '#/components/responses/Unauthorized'
+                '404':
+                    $ref: '#/components/responses/ChefNotFound'
+
+components:
+    examples:
+        OK:
+            value:
+                message: 'عملیات موفقیت آمیز بود'
+                msgCode: 200
+                info: {}
+        CREATED:
+            value:
+                message: 'عملیات موفقیت آمیز بود'
+                msgCode: 201
+                info: {}
+        INVALID_ID:
+            description: 'the "ObjectID" in path is invalid [read more](#MongoDB-ObjectId)'
+            # TODO: add more details to Overview section
+            value:
+                message: 'آیدی نامعتبر است'
+                msgCode: 40002
+                info: "'5f9f9f9f_INV@LID_9f9f9f9f9f' is not a valid ObjectId"
+        JSON_SYNTAX_ERROR:
+            description: 'JSON syntax error [read more](#JSON-Syntax-Error)'
+            # TODO: add more details to Overview section
+            value:
+                message: 'JSON syntax error'
+                devMessage: 'JSON syntax error'
+                msgCode: 40001
+                info: {}
+        EMPTY_INPUT_BODY:
+            description: 'the request body is a empty json [read more](#empty-input-body)'
+            # TODO: add more details to Overview section
+            value:
+                message: 'دیتای ورودی معتبر نیست'
+                devMessage: 'Input body is empty'
+                msgCode: 40003
+                info: {}
+        INPUT_DATA_INVALID:
+            value:
+                errors:
+                    field: name
+                    type: stringMin
+                    message: 'نام باید حداقل 1 کاراکتر باشد'
+                message: 'دیتای ورودی معتبر نیست'
+                msgCode: 42201
+                info: {}
+        ACCESS_TOKEN_EXPIRED:
+            description: 'your access token is expired and you should [refresh it](#refresh-token).'
+            # TODO: add more details to Overview section
+            externalValue: 'https://example.com'
+            value:
+                message: 'عدم احراز هویت'
+                devMes: 'access token is expired'
+                msgCode: 40104
+                info: {}
+        ACCESS_TOKEN_INVALID:
+            value:
+                message: 'عدم احراز هویت'
+                devMes: 'access token is invalid'
+                msgCode: 40105
+                info: {}
+        ACCESS_TOKEN_NOT_SET:
+            value:
+                message: 'عدم احراز هویت'
+                devMes: 'access token is not set'
+                msgCode: 40103
+                info: {}
+        LOGIN_FAILED:
+            value:
+                message: ورود موفقیت آمیز نبود
+                msgCode: 40107
+                info: {}
+        RECIPE_NOT_FOUND:
+            value:
+                message: 'دستور پخت یافت نشد'
+                msgCode: 40405
+                info: {}
+        USER_NOT_FOUND:
+            value:
+                message: 'کاربر یافت نشد'
+                msgCode: 40401
+                info: {}
+        CATEGORY_NOT_FOUND:
+            value:
+                message: 'دسته بندی یافت نشد'
+                msgCode: 40402
+                info: category with id '5f9f9f9f9f9f9f9f9f9f9f9f' not found
+        SUB_CATEGORY_NOT_FOUND:
+            value:
+                message: 'زیر دسته بندی یافت نشد'
+                msgCode: 40403
+                info: subCategory with id '5f9f9f9f9f9f9f9f9f9f9f9f' not found
+        TAG_NOT_FOUND:
+            value:
+                message: 'تگ یافت نشد'
+                msgCode: 40404
+                info: tag with id '5f9f9f9f9f9f9f9f9f9f9f9f' not found
+        INGREDIENT_NOT_FOUND:
+            value:
+                message: 'مواد اولیه یافت نشد'
+                msgCode: 40406
+                info: ingredient with id '5f9f9f9f9f9f9f9f9f9f9f9f' not found
+        CHEF_NOT_FOUND:
+            value:
+                message: 'سرآشپز یافت نشد'
+                msgCode: 40407
+                info: chef with id '5f9f9f9f9f9f9f9f9f9f9f9f' not found
+        EMAIL_EXIST:
+            value:
+                message: 'ایمیل تکراری است'
+                msgCode: 40902
+                info: {}
+        PARENT_CATEGORY_NOT_FOUND:
+            value:
+                message: 'دسته بندی والد اشتباه است'
+                msgCode: 40908
+                info: {}
+        User:
+            value:
+                _id: 5f9f9f9f9f9f9f9f9f9f9f9f
+                name: 'محمد'
+                email: 'user@example.com'
+                role: 'USER'
+        Chef:
+            value:
+                name: 'محمد'
+                userId: '5f9f9f9f9f9f9f9f9f9f9f9f'
+                image: 'https://example.com/image.jpg'
+                slug: 'mohammad'
+        Category:
+            value:
+                name: 'سالاد'
+                description: 'توضیحات'
+                slug: 'salad'
+        SubCategory:
+            value:
+                name: 'سالاد میوه ای'
+                description: 'توضیحات'
+                slug: 'fruit-salad'
+                category: '5f9f9f9f9f9f9f9f9f9f9f9f'
+        Tag:
+            value:
+                name: 'پیش غذا'
+                slug: 'appetizer'
+                tagType: 'DIET'
+        Ingredient:
+            value:
+                name: 'گوجه فرنگی'
+                image: 'https://example.com/image.jpg'
+
+    parameters:
+        difficulty:
+            in: query
+            name: difficulty
+            description: 'difficulty of recipe'
+            required: false
+            schema:
+                $ref: '#/components/schemas/difficulty'
+        tag:
+            in: query
+            name: tag
+            description: 'tag id or slug'
+            required: false
+            schema:
+                $ref: '#/components/schemas/idOrSlug'
+            explode: true
+            style: deepObject
+        sub-category:
+            in: query
+            name: sub_category
+            description: 'sub category id or slug'
+            required: false
+            schema:
+                $ref: '#/components/schemas/idOrSlug'
+            explode: true
+            style: deepObject
+        category:
+            in: query
+            name: category
+            description: 'category id or slug'
+            required: false
+            schema:
+                $ref: '#/components/schemas/idOrSlug'
+            explode: true
+            style: deepObject
+        page:
+            name: page
+            in: query
+            description: 'Page number'
+            required: false
+            schema:
+                type: number
+                minimum: 1
+                default: 1
+        limit:
+            name: limit
+            in: query
+            description: 'Number of items to return'
+            required: false
+            schema:
+                type: number
+                minimum: 1
+                maximum: 30
+                default: 10
+        recipeId:
+            in: path
+            name: recipeId
+            description: 'recipe id'
+            required: true
+            schema:
+                $ref: '#/components/schemas/objectId'
+        userId:
+            in: path
+            name: userId
+            description: 'user id'
+            required: true
+            schema:
+                $ref: '#/components/schemas/objectId'
+        categoryId:
+            in: path
+            name: categoryId
+            description: 'category id'
+            required: true
+            schema:
+                $ref: '#/components/schemas/objectId'
+        subCategoryId:
+            in: path
+            name: subCategoryId
+            description: 'subCategory id'
+            required: true
+            schema:
+                $ref: '#/components/schemas/objectId'
+        tagId:
+            in: path
+            name: tagId
+            description: 'tag id'
+            required: true
+            schema:
+                $ref: '#/components/schemas/objectId'
+        ingredientId:
+            in: path
+            name: ingredientId
+            description: 'ingredient id'
+            required: true
+            schema:
+                $ref: '#/components/schemas/objectId'
+        chefId:
+            in: path
+            name: chefId
+            description: 'chef id'
+            required: true
+            schema:
+                $ref: '#/components/schemas/objectId'
+    schemas:
+        refreshToken:
+            type: object
+            properties:
+                refreshToken:
+                    type: string
+                    description: 'refresh token'
+                    minLength: 128
+                    maxLength: 128
+        accessToken:
+            type: object
+            properties:
+                accessToken:
+                    type: string
+                    description: 'access token'
+        idOrSlug:
+            type: object
+            properties:
+                slug:
+                    $ref: '#/components/schemas/slug'
+                id:
+                    $ref: '#/components/schemas/objectId'
+        difficulty:
+            type: string
+            enum:
+                - VERY_EASY
+                - EASY
+                - MEDIUM
+                - HARD
+                - VERY_HARD
+        objectId:
+            type: string
+            format: objectID
+            example: '5f9f9f9f9f9f9f9f9f9f9f9f'
+            # FIXME: همه مشکل ها به خاطر این عن بود
+        image:
+            type: string
+            minLength: 6
+            maxLength: 2048
+            pattern: /^https?:\/\/\S+.*\/.*\.(jpe?g|png|gif|bmp|webp)$/
+            format: url
+            example: https://www.example.com/image.jpg
+        video:
+            type: string
+            minLength: 6
+            maxLength: 2048
+            pattern: /^https?:\/\/\S+/
+            format: url
+            example: https://www.example.com/video.mp4
+        slug:
+            type: string
+            minLength: 1
+            maxLength: 255
+            example: example-slug
+        fullName:
+            type: string
+            minLength: 6
+            maxLength: 70
+            example: 'محمد میلانی'
+        entityName:
+            type: string
+            minLength: 1
+            maxLength: 150
+            example: 'پیتزا'
+        description:
+            type: string
+            maxLength: 3000
+            example: توضیحات
+        email:
+            type: string
+            minLength: 6
+            maxLength: 254
+            format: email
+            example: 'info@example.com'
+        password:
+            type: string
+            minLength: 8
+            maxLength: 255
+            example: '12345678'
+        role:
+            type: string
+            enum:
+                - ADMIN
+                - USER
+        Chef:
+            type: object
+            properties:
+                _id:
+                    $ref: '#/components/schemas/objectId'
+                name:
+                    $ref: '#/components/schemas/fullName'
+                description:
+                    $ref: '#/components/schemas/description'
+                image:
+                    $ref: '#/components/schemas/image'
+                userId:
+                    $ref: '#/components/schemas/objectId'
+                slug:
+                    $ref: '#/components/schemas/slug'
+        Recipe:
+            # required:
+            #     - name
+            #     - slug
+            #     - image
+            #     - difficulty
+            #     - cookingTime
+            #     - preparationTime
+            #     - cost
+            #     - nutritionalInfo
+            #     - healthy
+            #     - servingUnit
+            #     - ingredients
+            #     - instructions
+            #     - category
+            #     - subCategory
+            #     - tags
+            #     - chef
+            type: object
+            properties:
+                name:
+                    $ref: '#/components/schemas/entityName'
+                slug:
+                    $ref: '#/components/schemas/slug'
+                description:
+                    $ref: '#/components/schemas/description'
+                image:
+                    $ref: '#/components/schemas/image'
+                serving:
+                    type: number
+                    minimum: 1
+                difficulty:
+                    $ref: '#/components/schemas/difficulty'
+                cookingTime:
+                    type: number
+                    minimum: 1
+                preparationTime:
+                    type: number
+                    minimum: 1
+                cost:
+                    type: number
+                    minimum: 1
+                rate:
+                    type: number
+                    minimum: 1
+                    maximum: 5
+                video:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/video'
+                photocomments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/objectId'
+                chef:
+                    type: string
+                    nullable: true
+                    writeOnly: true
+                    $ref: '#/components/schemas/objectId'
+                    #   - $ref: '#/components/schemas/Chef'
+                nutritionalInfo:
+                    type: object
+                    properties:
+                        100g:
+                            type: object
+                            properties:
+                                kcal:
+                                    type: number
+                                    minimum: 1
+                                carb:
+                                    type: number
+                                    minimum: 1
+                                sugar:
+                                    type: number
+                                    minimum: 1
+                                prot:
+                                    type: number
+                                    minimum: 1
+                                fat:
+                                    type: number
+                                    minimum: 1
+                                sat_fat:
+                                    type: number
+                                    minimum: 1
+                                fiber:
+                                    type: number
+                                    minimum: 1
+                                chol:
+                                    type: number
+                                    minimum: 1
+                                na:
+                                    type: number
+                                    minimum: 1
+                        serving:
+                            type: object
+                            properties:
+                                kcal:
+                                    type: number
+                                    minimum: 1
+                                carb:
+                                    type: number
+                                    minimum: 1
+                                sugar:
+                                    type: number
+                                    minimum: 1
+                                prot:
+                                    type: number
+                                    minimum: 1
+                                fat:
+                                    type: number
+                                    minimum: 1
+                                sat_fat:
+                                    type: number
+                                    minimum: 1
+                                fiber:
+                                    type: number
+                                    minimum: 1
+                                chol:
+                                    type: number
+                                    minimum: 1
+                                na:
+                                    type: number
+                                    minimum: 1
+                healthy:
+                    type: boolean
+                servingUnit:
+                    type: string
+                note:
+                    type: string
+                ingredients:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            groupLabel:
+                                type: string
+                                minLength: 3
+                                maxLength: 64
+                            ingredients:
+                                type: array
+                                items:
+                                    # anyOf:
+                                    #     - allOf:
+                                    #         #   - $ref: '#/components/schemas/objectId'
+                                    #           - type: object
+                                    #             writeOnly: true
+                                    #             properties:
+                                    #                 ingredienId:
+                                    #                     $ref: '#/components/schemas/objectId'
+                                    #     - type: object
+                                    #       readOnly: true
+                                    #       properties:
+                                    #         ingredienId:
+                                    #             readOnly: true
+                                    #             allOf:
+                                    #                 - $ref: '#/components/schemas/Ingredient'
+                                    #                 - example:
+                                    #                         $ref: '#/components/examples/Ingredient'
+
+                                    type: object
+                                    properties:
+                                        ingredientId:
+                                            $ref: '#/components/schemas/objectId'
+                                            # oneOf:
+                                            #     - allOf:
+                                            #           - $ref: '#/components/schemas/objectId'
+                                            #           - writeOnly: true
+                                            #     - allOf:
+                                            #           - allOf:
+                                            #                 - $ref: '#/components/schemas/Ingredient'
+                                            #                 # - readOnly: true
+                                            #           - example:
+                                            #             $ref: '#/components/examples/Ingredient'
+                                        quantity:
+                                            type: string
+                instructions:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            type:
+                                type: string
+                                enum:
+                                    - intro
+                                    - preparation
+                                    - conservation
+                                    - advice
+                                    - generic
+                            title:
+                                type: string
+                                maxLength: 225
+                            text:
+                                type: string
+                            images:
+                                type: array
+                                items:
+                                    type: object
+                                    properties:
+                                        kind:
+                                            type: string
+                                            enum:
+                                                - block
+                                                - inline
+                                        image:
+                                            $ref: '#/components/schemas/image'
+                                    # default: {}
+                category:
+                    $ref: '#/components/schemas/objectId'
+                subCategory:
+                    $ref: '#/components/schemas/objectId'
+                tags:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/objectId'
+        RecipeRead:
+            allOf:
+                - $ref: '#/components/schemas/Recipe'
+                - properties:
+                      chef:
+                          allOf:
+                              - $ref: '#/components/schemas/Chef'
+                              - example:
+                                    $ref: '#/components/examples/Chef'
+                      category:
+                          allOf:
+                              - $ref: '#/components/schemas/Category'
+                              - example:
+                                    $ref: '#/components/examples/Category'
+                      subCategory:
+                          allOf:
+                              - $ref: '#/components/schemas/SubCategory'
+                              - example:
+                                    $ref: '#/components/examples/SubCategory'
+                      tags:
+                          type: array
+                          items:
+                              allOf:
+                                  - $ref: '#/components/schemas/Tag'
+                                  - example:
+                                        $ref: '#/components/examples/Tag'
+                      ingredients:
+                          type: array
+                          items:
+                              type: object
+                              properties:
+                                  ingredients:
+                                      type: array
+                                      items:
+                                          type: object
+                                          properties:
+                                              ingredientId:
+                                                  allOf:
+                                                      - $ref: '#/components/schemas/Ingredient'
+                                                      - example:
+                                                            $ref: '#/components/examples/Ingredient'
+        User:
+            type: object
+            properties:
+                email:
+                    $ref: '#/components/schemas/email'
+                password:
+                    $ref: '#/components/schemas/password'
+                role:
+                    $ref: '#/components/schemas/role'
+
+        Category:
+            type: object
+            properties:
+                name:
+                    $ref: '#/components/schemas/entityName'
+                slug:
+                    $ref: '#/components/schemas/slug'
+                description:
+                    $ref: '#/components/schemas/description'
+                image:
+                    $ref: '#/components/schemas/image'
+                subCategories:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/objectId'
+        SubCategory:
+            type: object
+            properties:
+                name:
+                    $ref: '#/components/schemas/entityName'
+                slug:
+                    $ref: '#/components/schemas/slug'
+                description:
+                    $ref: '#/components/schemas/description'
+                image:
+                    $ref: '#/components/schemas/image'
+                category:
+                    $ref: '#/components/schemas/objectId'
+        Tag:
+            type: object
+            properties:
+                name:
+                    $ref: '#/components/schemas/entityName'
+                slug:
+                    $ref: '#/components/schemas/slug'
+                description:
+                    $ref: '#/components/schemas/description'
+                image:
+                    $ref: '#/components/schemas/image'
+        Ingredient:
+            type: object
+            properties:
+                name:
+                    $ref: '#/components/schemas/entityName'
+                image:
+                    $ref: '#/components/schemas/image'
+        ApiResponse:
+            type: object
+            properties:
+                data:
+                    type: object
+                    nullable: true
+                message:
+                    type: string
+                msgCode:
+                    type: number
+                info:
+                    oneOf:
+                        - type: string
+                        - type: object
+                    example: {}
+        ApiInvalidInputDataResponse:
+            type: object
+            properties:
+                errors:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            message:
+                                type: string
+                            type:
+                                type: string
+                                enum:
+                                    - required
+                                    - email
+                                    - emailEmpty
+                                    - emailMax
+                                    - emailMin
+                                    - equalField
+                                    - length
+                                    - max
+                                    - min
+                                    - number
+                                    - numberNotEqual
+                                    - numberPositive
+                                    - objectID
+                                    - objectStrict
+                                    - pattern
+                                    - string
+                                    - stringEmpty
+                                    - stringEnum
+                                    - stringLength
+                                    - stringMax
+                                    - stringMin
+                                    - url
+                                    - DB_ERROR
+                            field:
+                                type: string
+                        nullable: true
+                message:
+                    type: string
+                msgCode:
+                    type: number
+                info:
+                    oneOf:
+                        - type: string
+                        - type: object
+                    example: {}
+
+    requestBodies:
+        EmailPassword:
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            email:
+                                $ref: '#/components/schemas/email'
+                            password:
+                                $ref: '#/components/schemas/password'
+                        required:
+                            - email
+                            - password
+        RefreshToken:
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            refreshToken:
+                                $ref: '#/components/schemas/refreshToken'
+                        required:
+                            - refreshToken
+                        example:
+                            refreshToken: '23a2a5110799a22ccdd5819c8f811ea8879d0f00fd65ae1f79365634a344309b7b70f79f6ac02920915251accd814043d874263c911feb984a8660412b56f836'
+        Email:
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            email:
+                                $ref: '#/components/schemas/email'
+                        required:
+                            - email
+                        example:
+                            email: 'user@example.com'
+        RecipeCreate:
+            description: Recipe request body
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/Recipe'
+                            - required:
+                                  - name
+                                  - slug
+                                  - image
+                                  - difficulty
+                                  - cookingTime
+                                  - preparationTime
+                                  - cost
+                                  - nutritionalInfo
+                                  - healthy
+                                  - servingUnit
+                                  - ingredients
+                                  - instructions
+                                  - category
+                                  - subCategory
+                                  - tags
+                                  - chef
+        RecipeUpdate:
+            description: Recipe request body
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Recipe'
+        UserCreate:
+            description: Create user request body
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/User'
+                            - required:
+                                  - email
+                                  - password
+        UserUpdate:
+            description: Update user request body
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/User'
+        CategoryCreate:
+            description: Create category request body
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/Category'
+                            - required:
+                                  - name
+                                  - slug
+        CategoryUpdate:
+            description: Update category request body
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Category'
+        SubCategoryCreate:
+            description: Create subCategory request body
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/SubCategory'
+                            - required:
+                                  - name
+                                  - slug
+                                  - category
+        SubCategoryUpdate:
+            description: Update subCategory request body
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/SubCategory'
+        TagCreate:
+            description: Create tag request body
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/Tag'
+                            - required:
+                                  - name
+                                  - slug
+                                  - tagType
+        TagUpdate:
+            description: Update tag request body
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Tag'
+        IngredientCreate:
+            description: Create ingredient request body
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/Ingredient'
+                            - required:
+                                  - name
+                                  - image
+        IngredientUpdate:
+            description: Update ingredient request body
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Ingredient'
+        ChefCreate:
+            description: Create chef request body
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/Chef'
+                            - required:
+                                  - name
+                                  - image
+                                  - userId
+                                  - slug
+        ChefUpdate:
+            description: Update chef request body
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Chef'
+
+    responses:
+        Ok:
+            description: Ok
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        OK:
+                            $ref: '#/components/examples/OK'
+        ValidationError:
+            description: 'Validation Error'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiInvalidInputDataResponse'
+                    examples:
+                        INPUT_DATA_INVALID:
+                            $ref: '#/components/examples/INPUT_DATA_INVALID'
+        Unauthorized:
+            description: 'Unauthorized'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        ACCESS_TOKEN_EXPIRED:
+                            $ref: '#/components/examples/ACCESS_TOKEN_EXPIRED'
+                        ACCESS_TOKEN_INVALID:
+                            $ref: '#/components/examples/ACCESS_TOKEN_INVALID'
+                        ACCESS_TOKEN_NOT_SET:
+                            $ref: '#/components/examples/ACCESS_TOKEN_NOT_SET'
+        LoginFailed:
+            description: 'Login Failed'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        LOGIN_FAILED:
+                            $ref: '#/components/examples/LOGIN_FAILED'
+        InvalidId:
+            description: 'Bad Request'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        INVALID_ID:
+                            $ref: '#/components/examples/INVALID_ID'
+        BadRequestInWrite:
+            description: 'Bad Request'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        INVALID_ID:
+                            $ref: '#/components/examples/INVALID_ID'
+                        JSON_SYNTAX_ERROR:
+                            $ref: '#/components/examples/JSON_SYNTAX_ERROR'
+                        EMPTY_INPUT_BODY:
+                            $ref: '#/components/examples/EMPTY_INPUT_BODY'
+        BadRequestInCreate:
+            description: 'Bad Request'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        JSON_SYNTAX_ERROR:
+                            $ref: '#/components/examples/JSON_SYNTAX_ERROR'
+                        EMPTY_INPUT_BODY:
+                            $ref: '#/components/examples/EMPTY_INPUT_BODY'
+        DuplicateEmail:
+            description: 'Conflict'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        EMAIL_EXIST:
+                            $ref: '#/components/examples/EMAIL_EXIST'
+        ParentCategoryNotFound:
+            description: 'Conflict'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        PARENT_CATEGORY_NOT_FOUND:
+                            $ref: '#/components/examples/PARENT_CATEGORY_NOT_FOUND'
+        RecipeNotFound:
+            description: 'Not found'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        RECIPE_NOT_FOUND:
+                            $ref: '#/components/examples/RECIPE_NOT_FOUND'
+        RecipeSuccess:
+            description: Success
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/ApiResponse'
+                            - type: object
+                              properties:
+                                  data:
+                                      $ref: '#/components/schemas/Recipe'
+        # FIXME: msgCode is not correct (0 to 200 and 201)
+        # TODO: add two examples for 200 and 201
+        AuthSuccess:
+            description: Success
+            headers:
+                x-access-token:
+                    schema:
+                        type: string
+                    description: Access token [read more](https://auth0.com/docs/secure/tokens/access-tokens)
+                x-refresh-token:
+                    schema:
+                        type: string
+                    description: Refresh token [read more](https://auth0.com/docs/tokens/refresh-token/current)
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/ApiResponse'
+                            - type: object
+                              properties:
+                                  message:
+                                      example: 'عملیات موفقیت آمیز بود'
+                                  msgCode:
+                                      example: 201
+                                  data:
+                                      $ref: '#/components/schemas/User'
+        RefreshTokenSuccess:
+            description: Success
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/ApiResponse'
+                            - type: object
+                              properties:
+                                  message:
+                                      example: 'عملیات موفقیت آمیز بود'
+                                  msgCode:
+                                      example: 201
+                                  data:
+                                      allOf:
+                                          - $ref: '#/components/schemas/refreshToken'
+                                          - $ref: '#/components/schemas/accessToken'
+                    example:
+                        data:
+                            accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+                            refreshToken: '23a2a5110799a22ccdd5819c8f811ea8879d0f00fd65ae1f79365634a344309b7b70f79f6ac02920915251accd814043d874263c911feb984a8660412b56f836'
+                        message: 'عملیات موفقیت آمیز بود'
+                        msgCode: 201
+                        info: {}
+        UserSuccess:
+            description: Success
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/ApiResponse'
+                            - type: object
+                              properties:
+                                  data:
+                                      $ref: '#/components/schemas/User'
+        UserNotFound:
+            description: 'Not found'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        USER_NOT_FOUND:
+                            $ref: '#/components/examples/USER_NOT_FOUND'
+        CategoryOk:
+            description: OK
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/ApiResponse'
+                            - type: object
+                              properties:
+                                  data:
+                                      $ref: '#/components/schemas/Category'
+                    examples:
+                        OK:
+                            value:
+                                msgCode: 200
+                                message: 'عملیات با موفقیت انجام شد'
+                                data:
+                                    _id: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                    name: 'Category 1'
+                                    description: 'Category 1 description'
+                                    slug: 'category-1'
+                                info: {}
+        SubCategoryOk:
+            description: OK
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/ApiResponse'
+                            - type: object
+                              properties:
+                                  data:
+                                      $ref: '#/components/schemas/SubCategory'
+                    examples:
+                        OK:
+                            value:
+                                msgCode: 200
+                                message: 'عملیات با موفقیت انجام شد'
+                                data:
+                                    _id: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                    name: 'SubCategory 1'
+                                    description: 'SubCategory 1 description'
+                                    slug: 'subcategory-1'
+                                info: {}
+        CategoryNotFound:
+            description: 'Not found'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        CATEGORY_NOT_FOUND:
+                            $ref: '#/components/examples/CATEGORY_NOT_FOUND'
+        SubCategoryNotFound:
+            description: 'Not found'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        SUB_CATEGORY_NOT_FOUND:
+                            $ref: '#/components/examples/SUB_CATEGORY_NOT_FOUND'
+        TagOk:
+            description: OK
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/ApiResponse'
+                            - type: object
+                              properties:
+                                  data:
+                                      $ref: '#/components/schemas/Tag'
+                    examples:
+                        OK:
+                            value:
+                                msgCode: 200
+                                message: 'عملیات با موفقیت انجام شد'
+                                data:
+                                    _id: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                    name: 'Tag 1'
+                                    slug: 'tag-1'
+                                    tagType: DIET
+                                info: {}
+        TagNotFound:
+            description: 'Not found'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        TAG_NOT_FOUND:
+                            $ref: '#/components/examples/TAG_NOT_FOUND'
+        IngredientOk:
+            description: OK
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/ApiResponse'
+                            - type: object
+                              properties:
+                                  data:
+                                      $ref: '#/components/schemas/Ingredient'
+                    examples:
+                        OK:
+                            value:
+                                msgCode: 200
+                                message: 'عملیات با موفقیت انجام شد'
+                                data:
+                                    _id: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                    name: 'Ingredient 1'
+                                    image: 'https://www.example.com/image.jpg'
+                                info: {}
+        IngredientNotFound:
+            description: 'Not found'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        INGREDIENT_NOT_FOUND:
+                            $ref: '#/components/examples/INGREDIENT_NOT_FOUND'
+        ChefOk:
+            description: OK
+            content:
+                application/json:
+                    schema:
+                        allOf:
+                            - $ref: '#/components/schemas/ApiResponse'
+                            - type: object
+                              properties:
+                                  data:
+                                      $ref: '#/components/schemas/Chef'
+                    examples:
+                        OK:
+                            value:
+                                msgCode: 200
+                                message: 'عملیات با موفقیت انجام شد'
+                                data:
+                                    _id: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                    name: 'Chef 1'
+                                    image: 'https://www.example.com/image.jpg'
+                                    userId: 5f1f9b9b9b9b9b9b9b9b9b9b
+                                    slug: 'chef-1'
+                                info: {}
+        ChefNotFound:
+            description: 'Not found'
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/ApiResponse'
+                    examples:
+                        USER_NOT_FOUND:
+                            $ref: '#/components/examples/USER_NOT_FOUND'
+                        CHEF_NOT_FOUND: # TODO: need to be implemented (USER_ID_NOT_FOUND with status 409)
+                            $ref: '#/components/examples/CHEF_NOT_FOUND'
+
+    securitySchemes:
+        accessToken:
+            type: apiKey
+            description: you can get this token from /auth/login endpoint at the response header
+            name: x-access-token
+            in: header
+
+    headers:
+        # X-Rate-Limit-Limit:
+        #     description: The number of allowed requests in the current period
+        #     schema:
+        #         type: number
+        # X-Rate-Limit-Remaining:
+        #     description: The number of remaining requests in the current period
+        #     schema:
+        #         type: number
+        # X-Rate-Limit-Reset:
+        #     description: The number of seconds left in the current period
+        #     schema:
+        #         type: number
+        x-access-token:
+            description: you can get this token from /auth/login endpoint at the response header
+            schema:
+                type: string
+        x-set-access-token:
+            schema:
+                type: string
+            description: 'if access token extended, it will be set in this header. [read more](#access-token-extension)'
+            # TODO: add more details to Overview section
+# security:
+#   - accessToken: []
+

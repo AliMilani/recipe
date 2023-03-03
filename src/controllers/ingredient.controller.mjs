@@ -53,7 +53,7 @@ class Ingredient extends Controller {
             return this.self.response(res, {
                 code: Code.INGREDIENT_NOT_FOUND
             })
-
+        // FIXME: remove slug (because it is not found in mongoose schema and validator)
         if (ingredient?.slug?.length >= 1)
             ingredient.slug =
                 ingredient.slug === oldIngredient.slug
