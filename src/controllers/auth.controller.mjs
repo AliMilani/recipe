@@ -92,14 +92,7 @@ class Auth extends Controller {
                 info: 'No user found with this email'
             })
         }
-        try {
-            await passwordVerify(password, targetUser.password)
-        } catch (error) {
-            return this.self.response(res, {
-                code: Code.LOGIN_INVALID,
-                info: { user, userObj: targetUser, error }
-            })
-        }
+        
         const cleanedUserObj = {
             ..._.pick(targetUser, ['email', 'role', 'createdAt', 'updatedAt']),
             id: targetUser._id

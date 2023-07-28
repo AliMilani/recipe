@@ -150,7 +150,7 @@ paths:
             summary: 'Get all recipes'
             description: 'Returns all recipes with pagination and user filters'
             operationId: 'getRecipes'
-            parameters:
+                :
                 - $ref: '#/components/parameters/page'
                 - $ref: '#/components/parameters/limit'
                 - $ref: '#/components/parameters/category'
